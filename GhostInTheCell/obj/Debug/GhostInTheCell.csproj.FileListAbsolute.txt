@@ -1,0 +1,6 @@
+F:\Projects\CodinGame\GhostInTheCell\GhostInTheCell\bin\Debug\GhostInTheCell.exe.config
+F:\Projects\CodinGame\GhostInTheCell\GhostInTheCell\bin\Debug\GhostInTheCell.exe
+F:\Projects\CodinGame\GhostInTheCell\GhostInTheCell\bin\Debug\GhostInTheCell.pdb
+F:\Projects\CodinGame\GhostInTheCell\GhostInTheCell\obj\Debug\GhostInTheCell.csprojResolveAssemblyReference.cache
+F:\Projects\CodinGame\GhostInTheCell\GhostInTheCell\obj\Debug\GhostInTheCell.exe
+F:\Projects\CodinGame\GhostInTheCell\GhostInTheCell\obj\Debug\GhostInTheCell.pdb
