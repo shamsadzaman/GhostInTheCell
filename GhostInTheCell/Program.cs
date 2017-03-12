@@ -12,6 +12,7 @@ class Player
     public List<FactoryDetail> FactoryDetailList;
     public List<Troop> TroopListOnRoute;                // Troops that are travelling
     public List<Bomb> BombListOnRoute;
+    public List<BombedFactory> BombedFactoryList;
 
     public int MyArmySize
     {
@@ -29,15 +30,17 @@ class Player
         }
     }
 
-    public static List<Troop> TroopListToSend { get; private set; }
+    public List<Troop> TroopListToSend { get; private set; }
     public int NumberOfBombAvailable { get; private set; }
+
+    public int NumberOfTurn;                        // Turn number of the game
 
     static void Main(string[] args)
     {
         string[] inputs;
         int factoryCount = int.Parse(Console.ReadLine()); // the number of factories
-        Console.Error.WriteLine("number of factories: " + factoryCount);
-        Console.Error.WriteLine("Factories: ");
+        //Console.Error.WriteLine("number of factories: " + factoryCount);
+        //Console.Error.WriteLine("Factories: ");
         int linkCount = int.Parse(Console.ReadLine()); // the number of links between factories
 
         var factoryDistances = new int[linkCount][];
@@ -54,21 +57,24 @@ class Player
             factoryDistances[factory2] = new int[linkCount];
             factoryDistances[factory2][factory1] = distance;        // need to update distance on both side of the array
 
-            Console.Error.WriteLine(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2]);
+            //Console.Error.WriteLine(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2]);
         }
 
         var player = new Player
         {
             Factorydistance = factoryDistances,
-            NumberOfBombAvailable = 2
+            NumberOfBombAvailable = 2,
+            NumberOfTurn = 0,
+            BombedFactoryList = new List<BombedFactory>()
         };
-
 
         // game loop
         while (true)
         {
+            player.NumberOfTurn++;
+
             int entityCount = int.Parse(Console.ReadLine()); // the number of entities (e.g. factories and troops)
-            Console.Error.WriteLine("Entities: ");
+            Console.Error.WriteLine("Number of count: {0}", player.NumberOfTurn);
 
             player.FactoryDetailList = new List<FactoryDetail>();
             player.TroopListOnRoute = new List<Troop>();
@@ -107,7 +113,7 @@ class Player
                         RemainingTurnToTarget = arg5
                     });
                 }
-                else if(entityType == "BOMB")
+                else if (entityType == "BOMB")
                 {
                     player.BombListOnRoute.Add(new Bomb
                     {
@@ -126,42 +132,78 @@ class Player
 
             player.Strategize(); // creates the troop list to send
 
-            // Any valid action, such as "WAIT" or "MOVE source destination cyborgs"
-            if (TroopListToSend == null || !TroopListToSend.Any())
-            {
-                Console.WriteLine("WAIT");
-            }
-            else
-            {
-                Console.Error.WriteLine("Troop size: {0}", TroopListToSend.Count);
-
-                var sb = new StringBuilder();
-
-                foreach (var troopToSend in TroopListToSend)
-                {
-                    sb.AppendFormat("MOVE {0} {1} {2};", troopToSend.SourceFactory, troopToSend.TargetFactory, troopToSend.NumberOfCyborg);
-                }
-
-                player.SendBombMostProductiveFactory(sb);
-
-                sb.Length -= 1;
-                Console.WriteLine(sb.ToString());
-            }
+            player.SendCommand();
         }
     }
 
-    private void SendBombMostProductiveFactory(StringBuilder sb)
+    public void SendCommand()
+    {
+        // Any valid action, such as "WAIT" or "MOVE source destination cyborgs"
+        if (TroopListToSend == null || !TroopListToSend.Any())
+        {
+            Console.WriteLine("WAIT");
+        }
+        else
+        {
+            //Console.Error.WriteLine("Troop size: {0}", TroopListToSend.Count);
+
+            var sb = new StringBuilder();
+
+            foreach (var troopToSend in TroopListToSend)
+            {
+                sb.AppendFormat("MOVE {0} {1} {2};", troopToSend.SourceFactory, troopToSend.TargetFactory, troopToSend.NumberOfCyborg);
+            }
+
+            SendBombToMostProductiveFactory(sb);
+
+            IncreaseProduction(sb);
+
+            sb.Length -= 1;
+            Console.WriteLine(sb.ToString());
+        }
+    }
+
+    private void IncreaseProduction(StringBuilder sb)
+    {
+        var factory = FactoryDetailList.Where(x => x.Owner == 1).FirstOrDefault(x => x.NumberOfCyborgPresent > 50);
+
+        if (factory != null)
+        {
+            sb.AppendFormat("INC {0};", factory.EntityId);
+        }
+    }
+
+    private void SendBombToMostProductiveFactory(StringBuilder sb)
     {
         if (NumberOfBombAvailable > 0)
         {
             var enemyFactoryWithBiggestArmy = FactoryDetailList.Where(x => x.Owner == -1).OrderByDescending(x => x.ProductionRate).First();
 
-            //todo: create another to just get the closest factory
+            var isFactoryAlreadyBombedInLastFiveTurn = BombedFactoryList.Any(x => x.EntityId == enemyFactoryWithBiggestArmy.EntityId && (NumberOfTurn - x.NumberOfTurnWhenItWasBombed) >= 5);
+
+            Console.Error.WriteLine("Bombed factory");
+            foreach(var bombedFactory in BombedFactoryList)
+            {
+                Console.Error.WriteLine("{0}  {1}  {2}", bombedFactory.EntityId, bombedFactory.FactoryOwner, bombedFactory.NumberOfTurnWhenItWasBombed);
+            }
+
+            if (isFactoryAlreadyBombedInLastFiveTurn)
+            {
+                return;
+            }
+
             var closestFactory = FindClosestFactory(enemyFactoryWithBiggestArmy);
 
             sb.AppendFormat("BOMB {0} {1};", closestFactory.EntityId, enemyFactoryWithBiggestArmy.EntityId);
 
             NumberOfBombAvailable--;
+
+            BombedFactoryList.Add(new BombedFactory
+            {
+                EntityId = enemyFactoryWithBiggestArmy.EntityId,
+                FactoryOwner = -1,
+                NumberOfTurnWhenItWasBombed = NumberOfTurn
+            });
         }
     }
 
@@ -305,6 +347,15 @@ class Player
         }
 
         return factoryDetail;
+    }
+
+    public class BombedFactory
+    {
+        public int EntityId { get; set; }
+
+        public int FactoryOwner { get; set; }
+
+        public int NumberOfTurnWhenItWasBombed { get; set; }
     }
 
     public class FactoryDetail
