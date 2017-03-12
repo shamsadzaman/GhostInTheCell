@@ -179,7 +179,7 @@ class Player
         {
             var enemyFactoryWithBiggestArmy = FactoryDetailList.Where(x => x.Owner == -1).OrderByDescending(x => x.ProductionRate).First();
 
-            var isFactoryAlreadyBombedInLastFiveTurn = BombedFactoryList.Any(x => x.EntityId == enemyFactoryWithBiggestArmy.EntityId && (NumberOfTurn - x.NumberOfTurnWhenItWasBombed) >= 5);
+            var isFactoryAlreadyBombedInLastFiveTurn = BombedFactoryList.Any(x => x.EntityId == enemyFactoryWithBiggestArmy.EntityId && (NumberOfTurn - x.NumberOfTurnWhenItWasBombed) < 5);
 
             Console.Error.WriteLine("Bombed factory");
             foreach(var bombedFactory in BombedFactoryList)
@@ -386,7 +386,7 @@ class Player
 
     public class Bomb
     {
-        public int EntityId { get; set; }
+        public int EntityId { get; set      ; }
 
         public int Owner { get; set; }
 
