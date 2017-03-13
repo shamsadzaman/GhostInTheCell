@@ -195,20 +195,7 @@ class Player
             {
                 return;
             }
-
-            //var isFactoryAlreadyBombedInLastFiveTurn = BombedFactoryList.Any(x => x.EntityId == enemyMostProductiveFactory.EntityId && (NumberOfTurn - x.NumberOfTurnFactoryWasBombed) < 5);
-
-            ////Console.Error.WriteLine("Bombed factory");
-            ////foreach (var bombedFactory in BombedFactoryList)
-            ////{
-            ////    Console.Error.WriteLine("{0}  {1}  {2}", bombedFactory.EntityId, bombedFactory.FactoryOwner, bombedFactory.NumberOfTurnWhenItWasBombed);
-            ////}
-
-            //if (isFactoryAlreadyBombedInLastFiveTurn)
-            //{
-            //    return;
-            //}
-
+            
             var closestFactory = FindClosestFactory(enemyMostProductiveFactory);
             var distance = Factorydistance[closestFactory.EntityId][enemyMostProductiveFactory.EntityId];
 
