@@ -6,6 +6,18 @@ using System.Collections;
 using System.Collections.Generic;
 
 
+//todo: calculate army size for a target factory based on distance and production rate.
+//todo: attack CLOSER neutral productive factory first then pick the one with smaller army size 
+
+/*
+ * strategy 1: pick a target factory - find the closest factory to send the troops from 
+ * - this's what I'm doing right now
+ * 
+ * strategy 2: pick a source factory - find the closest enemy factory to send the troops to
+ * 
+ * strategy 3: a combination of strategy 1 & 2?
+ */
+
 class Player
 {
     public int[][] Factorydistance;
@@ -74,7 +86,7 @@ class Player
             player.NumberOfTurn++;
 
             int entityCount = int.Parse(Console.ReadLine()); // the number of entities (e.g. factories and troops)
-            Console.Error.WriteLine("Number of count: {0}", player.NumberOfTurn);
+            Console.Error.WriteLine("Number of turn: {0}", player.NumberOfTurn);
 
             player.FactoryDetailList = new List<FactoryDetail>();
             player.TroopListOnRoute = new List<Troop>();
@@ -145,8 +157,6 @@ class Player
         }
         else
         {
-            //Console.Error.WriteLine("Troop size: {0}", TroopListToSend.Count);
-
             var sb = new StringBuilder();
 
             foreach (var troopToSend in TroopListToSend)
@@ -154,7 +164,7 @@ class Player
                 sb.AppendFormat("MOVE {0} {1} {2};", troopToSend.SourceFactory, troopToSend.TargetFactory, troopToSend.NumberOfCyborg);
             }
 
-            SendBombToMostProductiveFactory(sb);
+            SendBomb(sb);
 
             IncreaseProduction(sb);
 
@@ -165,7 +175,8 @@ class Player
 
     private void IncreaseProduction(StringBuilder sb)
     {
-        var factory = FactoryDetailList.Where(x => x.Owner == 1).FirstOrDefault(x => x.NumberOfCyborgPresent > 50);
+        var factory = FactoryDetailList.Where(x => x.Owner == 1)
+            .FirstOrDefault(x => x.NumberOfCyborgPresent > 50);
 
         if (factory != null)
         {
@@ -173,44 +184,73 @@ class Player
         }
     }
 
-    private void SendBombToMostProductiveFactory(StringBuilder sb)
+    private void SendBomb(StringBuilder sb)
     {
         if (NumberOfBombAvailable > 0)
         {
-            var enemyFactoryWithBiggestArmy = FactoryDetailList.Where(x => x.Owner == -1).OrderByDescending(x => x.ProductionRate).First();
+            var enemyMostProductiveFactory = FactoryDetailList.Where(x => x.Owner == -1)
+                                                .OrderByDescending(x => x.ProductionRate).First();
 
-            var isFactoryAlreadyBombedInLastFiveTurn = BombedFactoryList.Any(x => x.EntityId == enemyFactoryWithBiggestArmy.EntityId && (NumberOfTurn - x.NumberOfTurnWhenItWasBombed) < 5);
-
-            Console.Error.WriteLine("Bombed factory");
-            foreach(var bombedFactory in BombedFactoryList)
-            {
-                Console.Error.WriteLine("{0}  {1}  {2}", bombedFactory.EntityId, bombedFactory.FactoryOwner, bombedFactory.NumberOfTurnWhenItWasBombed);
-            }
-
-            if (isFactoryAlreadyBombedInLastFiveTurn)
+            if (enemyMostProductiveFactory.ProductionRate < 2)
             {
                 return;
             }
 
-            var closestFactory = FindClosestFactory(enemyFactoryWithBiggestArmy);
+            //var isFactoryAlreadyBombedInLastFiveTurn = BombedFactoryList.Any(x => x.EntityId == enemyMostProductiveFactory.EntityId && (NumberOfTurn - x.NumberOfTurnFactoryWasBombed) < 5);
 
-            sb.AppendFormat("BOMB {0} {1};", closestFactory.EntityId, enemyFactoryWithBiggestArmy.EntityId);
+            ////Console.Error.WriteLine("Bombed factory");
+            ////foreach (var bombedFactory in BombedFactoryList)
+            ////{
+            ////    Console.Error.WriteLine("{0}  {1}  {2}", bombedFactory.EntityId, bombedFactory.FactoryOwner, bombedFactory.NumberOfTurnWhenItWasBombed);
+            ////}
+
+            //if (isFactoryAlreadyBombedInLastFiveTurn)
+            //{
+            //    return;
+            //}
+
+            var closestFactory = FindClosestFactory(enemyMostProductiveFactory);
+            var distance = Factorydistance[closestFactory.EntityId][enemyMostProductiveFactory.EntityId];
+
+            //var isBombOnTheWay = BombedFactoryList.Any(x => x.EntityId == enemyMostProductiveFactory.EntityId && NumberOfTurn < x.NumberOfTurnFactoryWasBombed);
+            //var shouldTakeFiveTurnsToReachTarget = distance >= 5;
+
+            //var shouldSendBomb = !isBombOnTheWay && shouldTakeFiveTurnsToReachTarget;
+
+            var bombedFactory = BombedFactoryList.FirstOrDefault(x => x.EntityId == enemyMostProductiveFactory.EntityId); // && NumberOfTurn < x.NumberOfTurnFactoryWasBombed);
+            var shouldSendBomb = false;
+
+            if(bombedFactory != null && bombedFactory.NumberOfTurnFactoryWasBombed > NumberOfTurn + 5)
+            {
+                // bomb already on it's way
+            }
+            else if(bombedFactory != null && (NumberOfTurn + distance) - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
+            {
+                // bombed in past, send bomb if when bomb reaches production will start again
+                shouldSendBomb = true;
+            }
+            else
+            {
+                // bomb hasn't been sent
+                shouldSendBomb = true;
+            }
+
+            if (shouldSendBomb)
+            {
+                sb.AppendFormat("BOMB {0} {1};", closestFactory.EntityId, enemyMostProductiveFactory.EntityId);
+            }
 
             NumberOfBombAvailable--;
 
+
             BombedFactoryList.Add(new BombedFactory
             {
-                EntityId = enemyFactoryWithBiggestArmy.EntityId,
+                EntityId = enemyMostProductiveFactory.EntityId,
                 FactoryOwner = -1,
-                NumberOfTurnWhenItWasBombed = NumberOfTurn
+                NumberOfTurnFactoryWasBombed = NumberOfTurn + distance
             });
         }
     }
-
-    
-
-    //todo: calculate army size for a target factory based on distance and production rate.
-    //todo: 
 
     public void Initialize()
     {
@@ -219,37 +259,60 @@ class Player
 
     public void Strategize()
     {
-        var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0).OrderByDescending(x => x.ProductionRate);
-        var myFactories = FactoryDetailList.Where(x => x.Owner == 1);
+        var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0)
+            .OrderByDescending(x => x.ProductionRate);
         var enemyFactories = FactoryDetailList.Where(x => x.Owner == -1);
-
-        //var troopToSend = new Troop();
 
         // attack neutral
         if (productiveNeutralFactories != null && productiveNeutralFactories.Any())
         {
-
-            //var mostProductiveFactory = productiveNeutralFactories.First();
-
-            BuildTroopList(myFactories, productiveNeutralFactories);
-            
+            BuildTroopList(productiveNeutralFactories);
         }
         // attack enemy
         else
         {
-            //var mostProductiveEnemyFactory = enemyFactories.OrderByDescending(x => x.ProductionRate).First();
-
-            BuildTroopList(myFactories, enemyFactories.OrderByDescending(x => x.ProductionRate));
+            BuildTroopList(enemyFactories.OrderByDescending(x => x.ProductionRate));
         }
 
-        //return null;
+        // send troop to bombed factory
+        //if (BombedFactoryList != null && BombedFactoryList.Any(x => NumberOfTurn - x.NumberOfTurnFactoryWasBombed == 1))
+        //{
+
+        //    // factory was bombed last turn, send army to that factory
+        //    var bombedFactoryInLastTurnList = BombedFactoryList
+        //            .Where(x => NumberOfTurn - x.NumberOfTurnFactoryWasBombed == 1);
+
+        //    Console.Error.WriteLine("Bombed factory count " + bombedFactoryInLastTurnList.Count());
+
+
+        //    foreach (var bombedFactory in bombedFactoryInLastTurnList)
+        //    {
+        //        var bombedFactoryDetail = FactoryDetailList
+        //                .Where(x => x.EntityId == bombedFactory.EntityId && x.ProductionRate > 1).FirstOrDefault();
+
+        //        if(bombedFactoryDetail == null || TroopListToSend.Any(x => x.TargetFactory == bombedFactoryDetail.EntityId))
+        //        {
+        //            continue;
+        //        }
+
+        //        Console.Error.WriteLine("Factory to bomb: " + bombedFactoryDetail.EntityId);
+
+        //        var troop = BuildTroop(bombedFactoryDetail);
+
+        //        if (troop != null)
+        //        {
+        //            Console.Error.WriteLine("Adding troop for: " + troop.TargetFactory);
+        //            TroopListToSend.Add(troop);
+        //        }
+        //    }
+        //}
     }
 
-    private void BuildTroopList(IEnumerable<FactoryDetail> myFactories, IOrderedEnumerable<FactoryDetail> productiveFactories)
+    private void BuildTroopList(IOrderedEnumerable<FactoryDetail> productiveFactories)
     {
         foreach (var productiveFactory in productiveFactories)
         {
-            var troopToSend = BuildTroop(myFactories, productiveFactory);
+            var troopToSend = BuildTroop(productiveFactory);
 
             if (troopToSend != null)
             {
@@ -258,9 +321,8 @@ class Player
         }
     }
     
-    public Troop BuildTroop(IEnumerable<FactoryDetail> myFactories, FactoryDetail targetFactory)
+    public Troop BuildTroop(FactoryDetail targetFactory)
     {
-        // find my closest factory with higher troop
         var closestFactoryWithBiggerArmy = FindClosestFactoryWithBiggerArmy(targetFactory);
 
         if (closestFactoryWithBiggerArmy != null)
@@ -287,10 +349,14 @@ class Player
 
     public FactoryDetail FindClosestFactoryWithBiggerArmy(FactoryDetail targetFactory)
     {
+        DebugMessage("Target: " + targetFactory.EntityId);
+
         // Factorydistance[targetFactory.EntityId] gives me distance from all the other factories
         var distancesFromTargetFactory = Factorydistance[targetFactory.EntityId];
 
         var myFactories = FactoryDetailList.Where(x => x.Owner == 1);
+
+        DebugMessage("Number of my factories: " + myFactories.Count());
 
         if (myFactories == null || !myFactories.Any())
         {
@@ -305,18 +371,20 @@ class Player
         // gets the closest factory
         foreach (var myFactory in myFactories)
         {
-
             if (distancesFromTargetFactory[myFactory.EntityId] < minDistance && targetFactory.NumberOfCyborgPresent < myFactory.NumberOfCyborgPresent)
             {
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
                 factoryDetail = myFactory;
+                DebugMessage("Factory found: " + factoryDetail.EntityId);
             }
         }
 
         return factoryDetail;
-        //distancesFromTargetFactory.
+    }
 
-        //var isItMine = FactoryDetailList.Where(x => x.EntityId == factoryId && x.Owner == 1).Any();
+    private void DebugMessage(string message)
+    {
+        Console.Error.WriteLine(message);
     }
 
     private FactoryDetail FindClosestFactory(FactoryDetail targetFactory)
@@ -349,13 +417,14 @@ class Player
         return factoryDetail;
     }
 
+    #region classes
     public class BombedFactory
     {
         public int EntityId { get; set; }
 
         public int FactoryOwner { get; set; }
 
-        public int NumberOfTurnWhenItWasBombed { get; set; }
+        public int NumberOfTurnFactoryWasBombed { get; set; }
     }
 
     public class FactoryDetail
@@ -396,4 +465,5 @@ class Player
 
         public int RemainingTurnToTarget { get; set; }
     }
+    #endregion
 }
