@@ -5,6 +5,12 @@ using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 
+// todo: if factory has 1/3 of total army -> pick target -> prefer closer productive ones
+// todo: else pick a target -> pick sources
+// todo: consider incooming troops
+// todo: value production: (productionRate / 3)
+// todo: value distance  : (1 - distance / 20)
+// todo: attack value = (value production + value distance) -> sort by highest to lowest
 
 //todo: calculate army size for a target factory based on distance and production rate.
 //todo: attack CLOSER neutral productive factory first then pick the one with smaller army size 
