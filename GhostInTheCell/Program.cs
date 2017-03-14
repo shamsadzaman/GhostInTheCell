@@ -26,6 +26,11 @@ using System.Collections.Generic;
 
 class Player
 {
+    private const int MaximumDistance = 20;
+    private const int MaximumProduction = 3;
+
+    private const decimal ArmyThreshold = 1 / 3;
+
     public int[][] Factorydistance;
     public List<FactoryDetail> FactoryDetailList;
     public List<Troop> TroopListOnRoute;                // Troops that are travelling
