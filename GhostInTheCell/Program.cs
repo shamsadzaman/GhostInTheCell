@@ -199,7 +199,6 @@ class Player
             var closestFactory = FindClosestFactory(enemyMostProductiveFactory);
             var distance = Factorydistance[closestFactory.EntityId][enemyMostProductiveFactory.EntityId];
 
-            //var isBombOnTheWay = BombedFactoryList.Any(x => x.EntityId == enemyMostProductiveFactory.EntityId && NumberOfTurn < x.NumberOfTurnFactoryWasBombed);
             //var shouldTakeFiveTurnsToReachTarget = distance >= 5;
 
             //var shouldSendBomb = !isBombOnTheWay && shouldTakeFiveTurnsToReachTarget;
