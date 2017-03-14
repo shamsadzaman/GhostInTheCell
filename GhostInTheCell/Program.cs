@@ -29,7 +29,7 @@ class Player
     private const int MaximumDistance = 20;
     private const int MaximumProduction = 3;
 
-    private const decimal ArmyThreshold = 1 / 3;
+    private const decimal ArmyThresholdFraction = 1 / 3;
 
     public int[][] Factorydistance;
     public List<FactoryDetail> FactoryDetailList;
@@ -51,6 +51,16 @@ class Player
         {
             return FactoryDetailList.Where(x => x.Owner == -1).Sum(x => x.NumberOfCyborgPresent);
         }
+    }
+
+    public int TotalArmySize
+    {
+        get { return MyArmySize + EnemyArmySize; }
+    }
+
+    public decimal ArmyThreshold
+    {
+        get { return TotalArmySize * ArmyThresholdFraction; }
     }
 
     public List<Troop> TroopListToSend { get; private set; }
@@ -257,6 +267,13 @@ class Player
 
     public void Strategize()
     {
+        var myFactoriesWithArmiesOverThreshold = FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold);
+
+        if (myFactoriesWithArmiesOverThreshold != null && myFactoriesWithArmiesOverThreshold.Any())
+        {
+            DebugMessage("factory over thresh count: " + myFactoriesWithArmiesOverThreshold.Count());
+        }
+
         var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0)
             .OrderByDescending(x => x.ProductionRate);
         var enemyFactories = FactoryDetailList.Where(x => x.Owner == -1);
@@ -462,6 +479,15 @@ class Player
         public int TargetFactory { get; set; }
 
         public int RemainingTurnToTarget { get; set; }
+    }
+
+    public class Owner
+    {
+        public const int Enemy = -1;
+
+        public const int Neutral = 0;
+
+        public const int Me = 1;
     }
     #endregion
 }
