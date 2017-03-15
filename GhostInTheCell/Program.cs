@@ -131,7 +131,8 @@ class Player
                         EntityId = entityId,
                         Owner = arg1,
                         NumberOfCyborgPresent = arg2,
-                        ProductionRate = arg3
+                        ProductionRate = arg3,
+                        DistanceToOtherFactories = factoryDistances[entityId]
                     });
                 }
                 else if (entityType == "TROOP")
@@ -272,6 +273,12 @@ class Player
         if (myFactoriesWithArmiesOverThreshold != null && myFactoriesWithArmiesOverThreshold.Any())
         {
             DebugMessage("factory over thresh count: " + myFactoriesWithArmiesOverThreshold.Count());
+
+            // todo: select target factory around each of my factory
+            foreach(var myFactory in myFactoriesWithArmiesOverThreshold)
+            {
+                BuildTroopToSendAround(myFactory);
+            }
         }
 
         var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0)
@@ -321,6 +328,47 @@ class Player
         //        }
         //    }
         //}
+    }
+
+    private void BuildTroopToSendAround(FactoryDetail sourceFactory)
+    {
+        var neutralFactories = FactoryDetailList.Where(x => x.Owner == Owner.Neutral);
+
+        foreach (var nFactory in neutralFactories)
+        {
+            nFactory.AttackValue = (nFactory.ProductionRate / 3) + (1 - (sourceFactory.DistanceToOtherFactories[nFactory.EntityId] / 20));
+        }
+
+        var neutralfactoriesOrderedByAttackValue = neutralFactories.OrderByDescending(x => x.AttackValue);
+
+        foreach(var nFactory in neutralFactories)
+        {
+            if(nFactory.NumberOfCyborgPresent < sourceFactory.NumberOfCyborgPresent + 2)
+            {
+                AddTroopToSendList(sourceFactory, nFactory);
+            }
+        }
+    }
+
+    private void AddTroopToSendList(FactoryDetail sourceFactory, FactoryDetail targetFactory)
+    {
+        TroopListToSend.Add(BuildTroop(sourceFactory, targetFactory));
+    }
+
+    private Troop BuildTroop(FactoryDetail sourceFactory, FactoryDetail targetFactory)
+    {
+        var troopToSend = new Troop
+        {
+            SourceFactory = sourceFactory.EntityId,
+            TargetFactory = targetFactory.EntityId,
+            NumberOfCyborg = targetFactory.NumberOfCyborgPresent + 2
+        };
+
+        targetFactory.NumberOfCyborgPresent -= troopToSend.NumberOfCyborg;
+
+        //UpdateCyborgNumberInFactory(troopToSend);
+
+        return troopToSend;
     }
 
     private void BuildTroopList(IOrderedEnumerable<FactoryDetail> productiveFactories)
@@ -451,6 +499,9 @@ class Player
         public int NumberOfCyborgPresent { get; set; }
 
         public int ProductionRate { get; set; }
+        public int[] DistanceToOtherFactories { get; internal set; }
+
+        public decimal AttackValue { get; set; }
     }
 
     public class Troop
