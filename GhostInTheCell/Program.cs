@@ -316,10 +316,10 @@ internal class Player
         //TroopListToSend.Remove(TroopListToSend.Single(x => x.EntityId == ));
         foreach (var troop in TroopListOnRoute.Where(x => x.Owner == -1))
         {
-            //var targetFactoryProductionRate = FactoryDetailList.Single(y => y.EntityId == troop.TargetFactory).ProductionRate;
+            var targetFactoryProductionRate = FactoryDetailList.Single(y => y.EntityId == troop.TargetFactory).ProductionRate;
 
             var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory 
-                        && x.NumberOfCyborg < troop.NumberOfCyborg);
+                        && x.NumberOfCyborg + targetFactoryProductionRate * troop.RemainingTurnToTarget < troop.NumberOfCyborg);
 
             if(tr != null)
                 TroopListToSend.Remove(tr);
