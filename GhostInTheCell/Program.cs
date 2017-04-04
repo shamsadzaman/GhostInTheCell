@@ -26,12 +26,13 @@ using System.Collections.Generic;
 
 internal class Player
 {
+#region fields
     private const int MaximumDistance = 20;
     private const int MaximumProduction = 3;
 
     private const decimal ArmyThresholdFraction = 1 / 3;
 
-    public int[][] Factorydistance;
+    public int[][] FactoryDistance;
     public List<FactoryDetail> FactoryDetailList;
     public List<Troop> TroopListOnRoute;                // Troops that are travelling
     public List<Bomb> BombListOnRoute;
@@ -68,6 +69,8 @@ internal class Player
 
     public int NumberOfTurn;                        // Turn number of the game
 
+#endregion
+
     private static void Main(string[] args)
     {
         string[] inputs;
@@ -77,29 +80,61 @@ internal class Player
         var linkCount = int.Parse(Console.ReadLine()); // the number of links between factories
 
         var factoryDistances = new int[linkCount][];
+        int factory1 = 0;
+        int factory2 = 0;
 
         for (var i = 0; i < linkCount; i++)
         {
             inputs = Console.ReadLine().Split(' ');
-            var factory1 = int.Parse(inputs[0]);
-            var factory2 = int.Parse(inputs[1]);
+            factory1 = int.Parse(inputs[0]);
+            factory2 = int.Parse(inputs[1]);
             var distance = int.Parse(inputs[2]);
 
-            factoryDistances[factory1] = new int[linkCount];
+            if (factoryDistances[factory1] == null)
+            {
+                factoryDistances[factory1] = new int[linkCount];
+            }
+
             factoryDistances[factory1][factory2] = distance;
-            factoryDistances[factory2] = new int[linkCount];
+
+            if (factoryDistances[factory2] == null)
+            {
+                factoryDistances[factory2] = new int[linkCount];
+            }
+
             factoryDistances[factory2][factory1] = distance;        // need to update distance on both side of the array
 
             //Console.Error.WriteLine(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2]);
+            //DebugMessage($"*** distance from {factory1} to {factory2} : {factoryDistances[factory1][factory2]}");
         }
+
+        //for (var i = 0; i < linkCount; i++)
+        //{
+        //    for (var j = 0; j < linkCount; j++)
+        //    {
+        //        DebugMessage($"distance from {i} to {j}: {factoryDistances[i][j]}");
+        //    }
+        //}
+
+        DebugMessage($"distance from {factory1} to {factory2}: {factoryDistances[1][2]}");
 
         var player = new Player
         {
-            Factorydistance = factoryDistances,
+            FactoryDistance = factoryDistances,
             NumberOfBombAvailable = 2,
             NumberOfTurn = 0,
             BombedFactoryList = new List<BombedFactory>()
         };
+
+        //for (var i = 0; i < linkCount; i++)
+        //{
+        //    for (var j = 0; j < linkCount; j++)
+        //    {
+        //        DebugMessage($"distance from {i} to {j}: {player.FactoryDistance[i][j]}");
+        //    }
+        //}
+
+        DebugMessage($"distance from {factory1} to {factory2}: {player.FactoryDistance[factory1][factory2]}");
 
         // game loop
         while (true)
@@ -112,6 +147,7 @@ internal class Player
             player.FactoryDetailList = new List<FactoryDetail>();
             player.TroopListOnRoute = new List<Troop>();
             player.BombListOnRoute = new List<Bomb>();
+            player.TroopListToSend = new List<Troop>();
 
             for (var i = 0; i < entityCount; i++)
             {
@@ -155,7 +191,7 @@ internal class Player
                 //Console.Error.WriteLine(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2] + ' ' + inputs[3] + ' ' + inputs[4] + ' ' + inputs[5] + ' ' + inputs[6]);
             }
 
-            player.Initialize();
+            //player.Initialize();
 
             player.Strategize(); // creates the troop list to send
 
@@ -178,7 +214,9 @@ internal class Player
             var sb = new StringBuilder();
 
             foreach (var troopToSend in TroopListToSend)
+            {
                 sb.AppendFormat("MOVE {0} {1} {2};", troopToSend.SourceFactory, troopToSend.TargetFactory, troopToSend.NumberOfCyborg);
+            }
 
             SendBomb(sb);
 
@@ -192,9 +230,9 @@ internal class Player
     private void IncreaseProduction(StringBuilder sb)
     {
         var factory = FactoryDetailList.Where(x => x.Owner == 1)
-            .FirstOrDefault(x => x.NumberOfCyborgPresent > 50);
+            .FirstOrDefault(x => x.NumberOfCyborgPresent > TotalArmySize / 3);
 
-        if (factory != null)
+        if (factory != null && factory.NumberOfCyborgPresent > 10)
             sb.AppendFormat("INC {0};", factory.EntityId);
     }
 
@@ -205,11 +243,15 @@ internal class Player
             var enemyMostProductiveFactory = FactoryDetailList.Where(x => x.Owner == -1)
                                                 .OrderByDescending(x => x.ProductionRate).First();
 
-            if (enemyMostProductiveFactory.ProductionRate < 2)
+            if (enemyMostProductiveFactory.ProductionRate != 3 && FactoryDetailList.All(x => x.ProductionRate != 3))
                 return;
 
             var closestFactory = FindClosestFactory(enemyMostProductiveFactory);
-            var distance = Factorydistance[closestFactory.EntityId][enemyMostProductiveFactory.EntityId];
+            var distance = FactoryDistance[closestFactory.EntityId][enemyMostProductiveFactory.EntityId];
+
+            DebugMessage(@"******************Distance to target factory (bomb): " + distance
+                        + "\nTarget Factory: " + enemyMostProductiveFactory.EntityId
+                        + "\nSource Factory: " + closestFactory.EntityId);
 
             //var isBombOnTheWay = BombedFactoryList.Any(x => x.EntityId == enemyMostProductiveFactory.EntityId && NumberOfTurn < x.NumberOfTurnFactoryWasBombed);
             //var shouldTakeFiveTurnsToReachTarget = distance >= 5;
@@ -222,12 +264,13 @@ internal class Player
             if(bombedFactory != null && bombedFactory.NumberOfTurnFactoryWasBombed > NumberOfTurn + 5)
             {
                 // bomb already on it's way
+                //DebugMessage("********* bomb's on the way");
             }
-            else if(bombedFactory != null && NumberOfTurn + distance - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
-            {
-                // bombed in past, send bomb if when bomb reaches production will start again
-                shouldSendBomb = true;
-            }
+            //else if(bombedFactory != null && NumberOfTurn + distance - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
+            //{
+            //    // bombed in past, send bomb if when bomb reaches production will start again
+            //    shouldSendBomb = true;
+            //}
             else
             {
                 // bomb hasn't been sent
@@ -259,9 +302,11 @@ internal class Player
         var myFactoriesWithArmiesOverThreshold = FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold);
 
         if (myFactoriesWithArmiesOverThreshold != null && myFactoriesWithArmiesOverThreshold.Any())
+        {
             DebugMessage("factory over thresh count: " + myFactoriesWithArmiesOverThreshold.Count());
+        }
 
-        var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0)
+        var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0).Where(x => x.ProductionRate > 0)
             .OrderByDescending(x => x.ProductionRate);
 
         var enemyFactories = FactoryDetailList.Where(x => x.Owner == -1);
@@ -367,12 +412,12 @@ internal class Player
     {
         DebugMessage("Target: " + targetFactory.EntityId);
 
-        // Factorydistance[targetFactory.EntityId] gives me distance from all the other factories
-        var distancesFromTargetFactory = Factorydistance[targetFactory.EntityId];
+        // FactoryDistance[targetFactory.EntityId] gives me distance from all the other factories
+        var distancesFromTargetFactory = FactoryDistance[targetFactory.EntityId];
 
         var myFactories = FactoryDetailList.Where(x => x.Owner == 1);
 
-        DebugMessage("Number of my factories: " + myFactories.Count());
+        //DebugMessage("Number of my factories: " + myFactories.Count());
 
         if (myFactories == null || !myFactories.Any())
             return null;
@@ -393,14 +438,14 @@ internal class Player
         return factoryDetail;
     }
 
-    private void DebugMessage(string message)
+    private static void DebugMessage(string message)
     {
         Console.Error.WriteLine(message);
     }
 
     private FactoryDetail FindClosestFactory(FactoryDetail targetFactory)
     {
-        var distancesFromTargetFactory = Factorydistance[targetFactory.EntityId];
+        var distancesFromTargetFactory = FactoryDistance[targetFactory.EntityId];
 
         var myFactories = FactoryDetailList.Where(x => x.Owner == 1);
 
