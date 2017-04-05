@@ -266,11 +266,12 @@ internal class Player
                 // bomb already on it's way
                 //DebugMessage("********* bomb's on the way");
             }
-            //else if(bombedFactory != null && NumberOfTurn + distance - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
-            //{
-            //    // bombed in past, send bomb if when bomb reaches production will start again
-            //    shouldSendBomb = true;
-            //}
+            // this check bumps my rank from 288 to 205; WHY????
+            else if (bombedFactory != null && NumberOfTurn + distance - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
+            {
+                // bombed in past, send bomb if when bomb reaches production will start again
+                shouldSendBomb = true;
+            }
             else
             {
                 // bomb hasn't been sent
