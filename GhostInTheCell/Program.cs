@@ -26,11 +26,12 @@ using System.Collections.Generic;
 
 internal class Player
 {
-#region fields
+    #region fields
+
     private const int MaximumDistance = 20;
     private const int MaximumProduction = 3;
 
-    private const decimal ArmyThresholdFraction = 1 / 3;
+    private const decimal ArmyThresholdFraction = 0.333M;
 
     public int[][] FactoryDistance;
     public List<FactoryDetail> FactoryDetailList;
@@ -54,22 +55,16 @@ internal class Player
         }
     }
 
-    public int TotalArmySize
-    {
-        get { return MyArmySize + EnemyArmySize; }
-    }
+    public int TotalArmySize => MyArmySize + EnemyArmySize;
 
-    public decimal ArmyThreshold
-    {
-        get { return TotalArmySize * ArmyThresholdFraction; }
-    }
+    public decimal ArmyThreshold => TotalArmySize * ArmyThresholdFraction;
 
     public List<Troop> TroopListToSend { get; private set; }
     public int NumberOfBombAvailable { get; private set; }
 
     public int NumberOfTurn;                        // Turn number of the game
 
-#endregion
+    #endregion
 
     private static void Main(string[] args)
     {
@@ -172,7 +167,7 @@ internal class Player
                     player.TroopListOnRoute.Add(new Troop
                     {
                         EntityId = entityId,
-                        Owner = arg1,
+                        Attacker = arg1,
                         SourceFactory = arg2,
                         TargetFactory = arg3,
                         NumberOfCyborg = arg4,
@@ -230,11 +225,50 @@ internal class Player
     private void IncreaseProduction(StringBuilder sb)
     {
         var factory = FactoryDetailList.Where(x => x.Owner == 1)
-            .FirstOrDefault(x => x.NumberOfCyborgPresent > TotalArmySize / 3);
+            .FirstOrDefault(x => x.NumberOfCyborgPresent > TotalArmySize / (FactoryDetailList.Count / 2));      // instead of one third army consider the number of factory present in the game to count the threshold to level up production
 
-        if (factory != null && factory.NumberOfCyborgPresent > 10)
-            sb.AppendFormat("INC {0};", factory.EntityId);
+
+        if (factory == null || factory.NumberOfCyborgPresent <= 10)
+            return;
+
+        var isUnderAttack = IsFactoryUnderAttack(factory.EntityId);
+        sb.AppendFormat("INC {0};", factory.EntityId);
     }
+
+    private bool IsFactoryUnderAttack(int factoryEntityId, int ownerId = Owner.Me)
+    {
+        return TroopListToSend.Any(x => x.TargetFactory == factoryEntityId && x.Attacker == ownerId);
+    }
+
+    /// <summary>
+    /// Assuming given factory Id is under attack
+    /// </summary>
+    /// <param name="factoryEntityId"></param>
+    /// <param name="ownerId">owner of the given factory</param>
+    /// <returns></returns>
+    private bool IsFactorySafeAfterAttack(int factoryEntityId, int ownerId = Owner.Me)
+    {
+        if (!IsFactoryUnderAttack(factoryEntityId, ownerId))
+        {
+            return true;
+        }
+
+        var targetFactory = FactoryDetailList.Single(x => x.EntityId == factoryEntityId);
+
+        var troop = TroopListOnRoute.FirstOrDefault(x => x.EntityId == factoryEntityId);
+
+        if (troop != null)
+        {
+            // by the time troop reaches the factory check if the factory would have produced enough cyborg to defeat the troop
+            return troop.NumberOfCyborg <=
+                   targetFactory.ProductionRate * troop.RemainingTurnToTarget + targetFactory.NumberOfCyborgPresent;
+        }
+
+
+        DebugMessage("ERROR: can't find troop");
+        return true;
+    }
+
 
     private void SendBomb(StringBuilder sb)
     {
@@ -357,18 +391,27 @@ internal class Player
 
     private void DefendFactory()
     {
-        //var isUnderAttack = TroopListToSend.Any(x => x.Owner == -1);
+        //var isUnderAttack = TroopListToSend.Any(x => x.Attacker == -1);
 
         //TroopListToSend.Remove(TroopListToSend.Single(x => x.EntityId == ));
-        foreach (var troop in TroopListOnRoute.Where(x => x.Owner == -1))
+        foreach (var troop in TroopListOnRoute.Where(x => x.Attacker == -1))
         {
-            var targetFactoryProductionRate = FactoryDetailList.Single(y => y.EntityId == troop.TargetFactory).ProductionRate;
+            //var targetFactoryProductionRate = FactoryDetailList.Single(y => y.EntityId == troop.TargetFactory).ProductionRate;
 
-            var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory 
-                        && x.NumberOfCyborg + targetFactoryProductionRate * troop.RemainingTurnToTarget < troop.NumberOfCyborg);
+            //var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory 
+            //            && x.NumberOfCyborg + targetFactoryProductionRate * troop.RemainingTurnToTarget < troop.NumberOfCyborg);
+            if (IsFactoryUnderAttack(troop.TargetFactory))
+            {
+                continue;
+            }
 
-            if(tr != null)
+            var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory);
+
+            if (tr != null)
+            {
                 TroopListToSend.Remove(tr);
+                DebugMessage($"Troop removed: {tr.EntityId} target: {tr.TargetFactory}");
+            }
         }
     }
 
@@ -493,7 +536,7 @@ internal class Player
     {
         public int EntityId { get; set; }
 
-        public int Owner { get; set; }
+        public int Attacker { get; set; }
 
         public int SourceFactory { get; set; }
 
