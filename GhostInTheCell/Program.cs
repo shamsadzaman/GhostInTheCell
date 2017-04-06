@@ -99,20 +99,9 @@ internal class Player
             }
 
             factoryDistances[factory2][factory1] = distance;        // need to update distance on both side of the array
-
-            //Console.Error.WriteLine(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2]);
-            //DebugMessage($"*** distance from {factory1} to {factory2} : {factoryDistances[factory1][factory2]}");
         }
 
-        //for (var i = 0; i < linkCount; i++)
-        //{
-        //    for (var j = 0; j < linkCount; j++)
-        //    {
-        //        DebugMessage($"distance from {i} to {j}: {factoryDistances[i][j]}");
-        //    }
-        //}
-
-        DebugMessage($"distance from {factory1} to {factory2}: {factoryDistances[1][2]}");
+        //DebugMessage($"distance from {factory1} to {factory2}: {factoryDistances[1][2]}");
 
         var player = new Player
         {
@@ -121,16 +110,6 @@ internal class Player
             NumberOfTurn = 0,
             BombedFactoryList = new List<BombedFactory>()
         };
-
-        //for (var i = 0; i < linkCount; i++)
-        //{
-        //    for (var j = 0; j < linkCount; j++)
-        //    {
-        //        DebugMessage($"distance from {i} to {j}: {player.FactoryDistance[i][j]}");
-        //    }
-        //}
-
-        DebugMessage($"distance from {factory1} to {factory2}: {player.FactoryDistance[factory1][factory2]}");
 
         // game loop
         while (true)
@@ -178,8 +157,8 @@ internal class Player
                         RemainingTurnToTarget = arg5
                     });
 
-                    DebugMessage(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2] + ' ' + inputs[3] + ' ' + inputs[4] + ' ' +
-                             inputs[5] + ' ' + inputs[6]);
+                    //DebugMessage(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2] + ' ' + inputs[3] + ' ' + inputs[4] + ' ' +
+                    //         inputs[5] + ' ' + inputs[6]);
                 }
                 else if (entityType == "BOMB")
                 {
@@ -311,35 +290,51 @@ internal class Player
             var bombedFactory = BombedFactoryList.FirstOrDefault(x => x.EntityId == enemyMostProductiveFactory.EntityId); // && NumberOfTurn < x.NumberOfTurnFactoryWasBombed);
             var shouldSendBomb = false;
 
-            if(bombedFactory != null && bombedFactory.NumberOfTurnFactoryWasBombed > NumberOfTurn + 5)
-            {
-                // bomb already on it's way
-                //DebugMessage("********* bomb's on the way");
-            }
+            //if(bombedFactory != null && bombedFactory.NumberOfTurnBombWillExplode > NumberOfTurn)
+            //{
+            //    // bomb already on it's way
+            //    //DebugMessage("********* bomb's on the way");
+            //}
             // this check bumps my rank from 288 to 205; WHY????
-            else if (bombedFactory != null && NumberOfTurn + distance - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
+            //else if (bombedFactory != null && NumberOfTurn + distance - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
+            //{
+            //    // bombed in past, send bomb if when bomb reaches production will start again
+            //    shouldSendBomb = true;
+            //}
+            //else
+            //{
+            //    // bomb hasn't been sent
+            //    shouldSendBomb = true;
+            //}
+
+            if (bombedFactory == null)
             {
-                // bombed in past, send bomb if when bomb reaches production will start again
+                // was never sent, so send bomb
                 shouldSendBomb = true;
             }
-            else
+            else if (NumberOfTurn - bombedFactory.NumberOfTurnBombWasSent >= 5)
             {
-                // bomb hasn't been sent
                 shouldSendBomb = true;
             }
 
-            if (shouldSendBomb)
-                sb.AppendFormat("BOMB {0} {1};", closestFactory.EntityId, enemyMostProductiveFactory.EntityId);
+            if (!shouldSendBomb)
+                return;
+
+            sb.AppendFormat("BOMB {0} {1};", closestFactory.EntityId, enemyMostProductiveFactory.EntityId);
 
             NumberOfBombAvailable--;
 
-
-            BombedFactoryList.Add(new BombedFactory
+            var bomb = new BombedFactory
             {
                 EntityId = enemyMostProductiveFactory.EntityId,
                 FactoryOwner = -1,
-                NumberOfTurnFactoryWasBombed = NumberOfTurn + distance
-            });
+                NumberOfTurnBombWasSent = NumberOfTurn,
+                NumberOfTurnBombWillExplode = NumberOfTurn + distance
+            };
+
+            BombedFactoryList.Add(bomb);
+
+            DebugMessage($"Sending bomb from: {closestFactory.EntityId} to: {enemyMostProductiveFactory.EntityId} distance: {distance} current turn: {NumberOfTurn} explosion at: {bomb.NumberOfTurnBombWillExplode}");
         }
     }
 
@@ -575,7 +570,9 @@ internal class Player
 
         public int FactoryOwner { get; set; }
 
-        public int NumberOfTurnFactoryWasBombed { get; set; }
+        public int NumberOfTurnBombWasSent { get; set; }
+
+        public int NumberOfTurnBombWillExplode { get; set; }
     }
 
     public class FactoryDetail
