@@ -405,7 +405,7 @@ internal class Player
 
             //var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory 
             //            && x.NumberOfCyborg + targetFactoryProductionRate * troop.RemainingTurnToTarget < troop.NumberOfCyborg);
-            if (IsFactoryUnderAttack(enemyTroop.TargetFactory))
+            if (IsFactorySafeAfterAttack(enemyTroop.TargetFactory))
             {
                 continue;
             }
@@ -468,7 +468,7 @@ internal class Player
 
         //DebugMessage("Number of my factories: " + myFactories.Count());
 
-        if (myFactories == null || !myFactories.Any())
+        if (!myFactories.Any())
             return null;
 
         var minDistance = 30;
@@ -477,12 +477,14 @@ internal class Player
         //todo - improvement: I might be able to get rid of the loop if I add the destination array to each object for each factory
         // gets the closest factory
         foreach (var myFactory in myFactories)
+        {
             if (distancesFromTargetFactory[myFactory.EntityId] < minDistance && targetFactory.NumberOfCyborgPresent < myFactory.NumberOfCyborgPresent)
             {
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
                 factoryDetail = myFactory;
-                DebugMessage("Factory found: " + factoryDetail.EntityId);
+                DebugMessage($"Source Factory found: {factoryDetail.EntityId}  army: {factoryDetail.NumberOfCyborgPresent} prod rate: {factoryDetail.ProductionRate}");
             }
+        }
 
         return factoryDetail;
     }
