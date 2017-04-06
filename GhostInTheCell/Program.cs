@@ -260,6 +260,7 @@ internal class Player
     }
 
 
+    ///todo: if my troop is already attacking a factory and gonna reach there before bomb, don't send the bomb
     private void SendBomb(StringBuilder sb)
     {
         if (NumberOfBombAvailable > 0)
@@ -406,20 +407,21 @@ internal class Player
 
     private void SendTroopToNonProdFactory()
     {
+        var nonProdFactory = FactoryDetailList.FirstOrDefault(x => x.ProductionRate == 0);
+
+        if (nonProdFactory == null)
+        {
+            return;     // no prod 0 left
+        }
+
         var myFactories = FactoryDetailList.Where(x => x.Owner == Owner.Me).ToList();
+
         if (myFactories.Any(x => x.NumberOfCyborgPresent < 20) && myFactories.Any(x => x.ProductionRate < 3) && MyArmySize < EnemyArmySize)
         {
             return;         // check if all my factory has over 20 cyborgs
         }
 
-        var targetNeutralFactory = FactoryDetailList.FirstOrDefault(x => x.ProductionRate == 0);
-
-        if (targetNeutralFactory == null)
-        {
-            return;     // no prod 0 left
-        }
-
-        BuildTroopList(targetNeutralFactory);
+        BuildTroopList(nonProdFactory);
     }
 
     private void BuildTroopList(FactoryDetail targetFactory)
@@ -520,7 +522,7 @@ internal class Player
             {
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
 
-                if (IsFactoryUnderAttack(myFactory.EntityId))
+                if (!IsFactorySafeAfterAttack(myFactory.EntityId))
                 {
                     DebugMessage($"Factory under attack, don't send troop. factory id: {myFactory.EntityId}");
                 }
