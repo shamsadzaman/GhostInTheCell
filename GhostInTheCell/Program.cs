@@ -284,11 +284,17 @@ internal class Player
     {
         if (NumberOfBombAvailable > 0)
         {
-            var enemyMostProductiveFactory = FactoryDetailList.Where(x => x.Owner == -1)
-                                                .OrderByDescending(x => x.ProductionRate).First();
+            var enemyMostProductiveFactory =
+                FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Enemy && x.ProductionRate == 3);
+                                                //.OrderByDescending(x => x.ProductionRate).First();
 
-            if (enemyMostProductiveFactory.ProductionRate != 3 && FactoryDetailList.All(x => x.ProductionRate != 3))
+            //if (enemyMostProductiveFactory.ProductionRate != 3 && FactoryDetailList.All(x => x.ProductionRate >= 2))
+            //    return;
+
+            if (enemyMostProductiveFactory == null)
+            {
                 return;
+            }
 
             var closestFactory = FindClosestFactory(enemyMostProductiveFactory);
             var distance = FactoryDistance[closestFactory.EntityId][enemyMostProductiveFactory.EntityId];
