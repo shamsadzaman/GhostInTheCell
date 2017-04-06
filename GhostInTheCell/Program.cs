@@ -410,7 +410,7 @@ internal class Player
     private void AttackNonProductiveNeutralFactories()
     {
         var myFactories = FactoryDetailList.Where(x => x.Owner == Owner.Me).ToList();
-        if (myFactories.Any(x => x.NumberOfCyborgPresent < 20))
+        if (myFactories.Any(x => x.NumberOfCyborgPresent < 20) && myFactories.Any(x => x.ProductionRate < 3) && MyArmySize < EnemyArmySize)
         {
             return;         // check if all my factory has over 20 cyborgs
         }
