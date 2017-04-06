@@ -249,29 +249,28 @@ internal class Player
     /// Assuming given factory Id is under attack
     /// </summary>
     /// <param name="factoryEntityId"></param>
-    /// <param name="ownerId">owner of the given factory</param>
+    /// <param name="factoryOwnerId">owner of the given factory</param>
     /// <returns></returns>
-    private bool IsFactorySafeAfterAttack(int factoryEntityId, int ownerId = Owner.Me)
+    private bool IsFactorySafeAfterAttack(int factoryEntityId, int factoryOwnerId = Owner.Me)
     {
-        if (!IsFactoryUnderAttack(factoryEntityId, ownerId))
+        if (!IsFactoryUnderAttack(factoryEntityId, factoryOwnerId))
         {
             return true;
         }
 
         var targetFactory = FactoryDetailList.Single(x => x.EntityId == factoryEntityId);
 
-        var troop = TroopListOnRoute.FirstOrDefault(x => x.EntityId == factoryEntityId);
+        var troop = TroopListOnRoute.First(x => x.TargetFactory == factoryEntityId);
 
-        if (troop != null)
-        {
-            // by the time troop reaches the factory check if the factory would have produced enough cyborg to defeat the troop
-            return troop.NumberOfCyborg <=
-                   targetFactory.ProductionRate * troop.RemainingTurnToTarget + targetFactory.NumberOfCyborgPresent;
-        }
+        DebugMessage($"******Under attack" +
+                     $"\nProd Rate: {targetFactory.ProductionRate}" +
+                     $"\nCyborg : {targetFactory.NumberOfCyborgPresent}" +
+                     $"\ntroop size: {troop.NumberOfCyborg}" + 
+                     $"\nturn remaining: {troop.RemainingTurnToTarget}");
 
-
-        DebugMessage("ERROR: can't find troop");
-        return true;
+        // by the time troop reaches the factory check if the factory would have produced enough cyborg to defeat the troop
+        return troop.NumberOfCyborg <=
+               targetFactory.ProductionRate * troop.RemainingTurnToTarget + targetFactory.NumberOfCyborgPresent + 10;
     }
 
 
@@ -405,7 +404,7 @@ internal class Player
 
             //var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory 
             //            && x.NumberOfCyborg + targetFactoryProductionRate * troop.RemainingTurnToTarget < troop.NumberOfCyborg);
-            if (IsFactorySafeAfterAttack(enemyTroop.TargetFactory))
+            if (IsFactoryUnderAttack(enemyTroop.TargetFactory))
             {
                 continue;
             }
