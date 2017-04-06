@@ -13,6 +13,9 @@ using System.Collections.Generic;
 //todo: calculate army size for a target factory based on distance and production rate.
 //todo: attack CLOSER neutral productive factory first then pick the one with smaller army size 
 
+    /// TODO:
+    /// grab neutral factory prod 0 and increase production
+
 /*
  * strategy 1: pick a target factory - find the closest factory to send the troops from 
  * - this's what I'm doing right now
@@ -229,15 +232,18 @@ internal class Player
 
     private void IncreaseProduction(StringBuilder sb)
     {
-        var factory = FactoryDetailList.Where(x => x.Owner == 1)
-            .FirstOrDefault(x => x.NumberOfCyborgPresent > TotalArmySize / (FactoryDetailList.Count / 2));      // instead of one third army consider the number of factory present in the game to count the threshold to level up production
+        //var factory = FactoryDetailList.Where(x => x.Owner == 1)
+        //    .FirstOrDefault(x => x.NumberOfCyborgPresent > TotalArmySize / (FactoryDetailList.Count / 2));      // instead of one third army consider the number of factory present in the game to count the threshold to level up production
 
+        var factory = FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 15);
 
-        if (factory == null || factory.NumberOfCyborgPresent <= 10)
+        if (factory == null)
             return;
 
-        var isUnderAttack = IsFactoryUnderAttack(factory.EntityId);
-        sb.AppendFormat("INC {0};", factory.EntityId);
+        if (!IsFactoryUnderAttack(factory.EntityId))
+        {
+            sb.AppendFormat("INC {0};", factory.EntityId);
+        }
     }
 
     private bool IsFactoryUnderAttack(int factoryEntityId, int ownerId = Owner.Me)
