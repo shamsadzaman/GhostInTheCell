@@ -369,9 +369,10 @@ internal class Player
         else
             BuildTroopList(enemyFactories.OrderByDescending(x => x.ProductionRate));
 
+        SendTroopToNonProdFactory();
+
         DefendFactory();
 
-        AttackNonProductiveNeutralFactories();
 
         // send troop to bombed factory
         //if (BombedFactoryList != null && BombedFactoryList.Any(x => NumberOfTurn - x.NumberOfTurnFactoryWasBombed == 1))
@@ -407,7 +408,7 @@ internal class Player
         //}
     }
 
-    private void AttackNonProductiveNeutralFactories()
+    private void SendTroopToNonProdFactory()
     {
         var myFactories = FactoryDetailList.Where(x => x.Owner == Owner.Me).ToList();
         if (myFactories.Any(x => x.NumberOfCyborgPresent < 20) && myFactories.Any(x => x.ProductionRate < 3) && MyArmySize < EnemyArmySize)
@@ -415,11 +416,11 @@ internal class Player
             return;         // check if all my factory has over 20 cyborgs
         }
 
-        var targetNeutralFactory = FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Neutral);
+        var targetNeutralFactory = FactoryDetailList.FirstOrDefault(x => x.ProductionRate == 0);
 
         if (targetNeutralFactory == null)
         {
-            return;     // no neutral left
+            return;     // no prod 0 left
         }
 
         BuildTroopList(targetNeutralFactory);
@@ -505,7 +506,7 @@ internal class Player
         // FactoryDistance[targetFactory.EntityId] gives me distance from all the other factories
         var distancesFromTargetFactory = FactoryDistance[targetFactory.EntityId];
 
-        var myFactories = FactoryDetailList.Where(x => x.Owner == 1);
+        var myFactories = FactoryDetailList.Where(x => x.Owner == 1).ToList();
 
         //DebugMessage("Number of my factories: " + myFactories.Count());
 
