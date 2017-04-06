@@ -371,6 +371,8 @@ internal class Player
 
         DefendFactory();
 
+        AttackNonProductiveNeutralFactories();
+
         // send troop to bombed factory
         //if (BombedFactoryList != null && BombedFactoryList.Any(x => NumberOfTurn - x.NumberOfTurnFactoryWasBombed == 1))
         //{
@@ -403,6 +405,34 @@ internal class Player
         //        }
         //    }
         //}
+    }
+
+    private void AttackNonProductiveNeutralFactories()
+    {
+        var myFactories = FactoryDetailList.Where(x => x.Owner == Owner.Me).ToList();
+        if (myFactories.Any(x => x.NumberOfCyborgPresent < 20))
+        {
+            return;         // check if all my factory has over 20 cyborgs
+        }
+
+        var targetNeutralFactory = FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Neutral);
+
+        if (targetNeutralFactory == null)
+        {
+            return;     // no neutral left
+        }
+
+        BuildTroopList(targetNeutralFactory);
+    }
+
+    private void BuildTroopList(FactoryDetail targetFactory)
+    {
+        var troopToSend = BuildTroop(targetFactory);
+
+        if (troopToSend != null)
+        {
+            TroopListToSend.Add(troopToSend);
+        }
     }
 
     private void DefendFactory()
