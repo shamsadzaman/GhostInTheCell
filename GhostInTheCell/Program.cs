@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.IO;
 using System.Text;
-using System.Collections;
 using System.Collections.Generic;
 
 // todo: if factory has 1/3 of total army -> pick target -> prefer closer productive ones
@@ -137,7 +135,7 @@ internal class Player
             player.NumberOfTurn++;
 
             var entityCount = int.Parse(Console.ReadLine()); // the number of entities (e.g. factories and troops)
-            Console.Error.WriteLine("Number of turn: {0}", player.NumberOfTurn);
+            DebugMessage("entity count: " + entityCount);
 
             player.FactoryDetailList = new List<FactoryDetail>();
             player.TroopListOnRoute = new List<Troop>();
@@ -156,6 +154,7 @@ internal class Player
                 var arg5 = int.Parse(inputs[6]);
 
                 if (entityType == "FACTORY")
+                {
                     player.FactoryDetailList.Add(new FactoryDetail
                     {
                         EntityId = entityId,
@@ -163,7 +162,9 @@ internal class Player
                         NumberOfCyborgPresent = arg2,
                         ProductionRate = arg3
                     });
+                }
                 else if (entityType == "TROOP")
+                {
                     player.TroopListOnRoute.Add(new Troop
                     {
                         EntityId = entityId,
@@ -173,7 +174,12 @@ internal class Player
                         NumberOfCyborg = arg4,
                         RemainingTurnToTarget = arg5
                     });
+
+                    DebugMessage(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2] + ' ' + inputs[3] + ' ' + inputs[4] + ' ' +
+                             inputs[5] + ' ' + inputs[6]);
+                }
                 else if (entityType == "BOMB")
+                {
                     player.BombListOnRoute.Add(new Bomb
                     {
                         EntityId = entityId,
@@ -182,8 +188,7 @@ internal class Player
                         TargetFactory = arg3,
                         RemainingTurnToTarget = arg4
                     });
-
-                //Console.Error.WriteLine(inputs[0] + ' ' + inputs[1] + ' ' + inputs[2] + ' ' + inputs[3] + ' ' + inputs[4] + ' ' + inputs[5] + ' ' + inputs[6]);
+                }
             }
 
             //player.Initialize();
@@ -394,23 +399,23 @@ internal class Player
         //var isUnderAttack = TroopListToSend.Any(x => x.Attacker == -1);
 
         //TroopListToSend.Remove(TroopListToSend.Single(x => x.EntityId == ));
-        foreach (var troop in TroopListOnRoute.Where(x => x.Attacker == -1))
+        foreach (var enemyTroop in TroopListOnRoute.Where(x => x.Attacker == -1))
         {
             //var targetFactoryProductionRate = FactoryDetailList.Single(y => y.EntityId == troop.TargetFactory).ProductionRate;
 
             //var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory 
             //            && x.NumberOfCyborg + targetFactoryProductionRate * troop.RemainingTurnToTarget < troop.NumberOfCyborg);
-            if (IsFactoryUnderAttack(troop.TargetFactory))
+            if (IsFactoryUnderAttack(enemyTroop.TargetFactory))
             {
                 continue;
             }
 
-            var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory);
+            var tr = TroopListToSend.FirstOrDefault(myTroop => myTroop.SourceFactory == enemyTroop.TargetFactory);
 
             if (tr != null)
             {
                 TroopListToSend.Remove(tr);
-                DebugMessage($"Troop removed: {tr.EntityId} target: {tr.TargetFactory}");
+                DebugMessage($"Troop removed: {tr.SourceFactory} target: {tr.TargetFactory}");
             }
         }
     }
