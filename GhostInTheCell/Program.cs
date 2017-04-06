@@ -225,9 +225,10 @@ internal class Player
         }
     }
 
-    private bool IsFactoryUnderAttack(int factoryEntityId, int ownerId = Owner.Me)
+    private bool IsFactoryUnderAttack(int factoryEntityId, int ownaterId = Owner.Me)
     {
-        return TroopListToSend.Any(x => x.TargetFactory == factoryEntityId && x.Attacker == ownerId);
+        var attackerId = ownaterId == Owner.Me ? Owner.Enemy : Owner.Me;
+        return TroopListToSend.Any(x => x.TargetFactory == factoryEntityId && x.Attacker == attackerId);
     }
 
     /// <summary>
