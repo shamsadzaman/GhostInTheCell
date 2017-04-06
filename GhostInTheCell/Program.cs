@@ -371,7 +371,7 @@ internal class Player
 
         SendTroopToNonProdFactory();
 
-        DefendFactory();
+        //DefendFactory();
 
 
         // send troop to bombed factory
@@ -523,8 +523,16 @@ internal class Player
             if (distancesFromTargetFactory[myFactory.EntityId] < minDistance && targetFactory.NumberOfCyborgPresent < myFactory.NumberOfCyborgPresent)
             {
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
-                factoryDetail = myFactory;
-                DebugMessage($"Source Factory found: {factoryDetail.EntityId}  army: {factoryDetail.NumberOfCyborgPresent} prod rate: {factoryDetail.ProductionRate}");
+
+                if (IsFactoryUnderAttack(myFactory.EntityId))
+                {
+                    DebugMessage($"Factory under attack, don't send troop. factory id: {myFactory.EntityId}");
+                }
+                else
+                {
+                    factoryDetail = myFactory; 
+                    DebugMessage($"Source Factory found: {factoryDetail.EntityId}  army: {factoryDetail.NumberOfCyborgPresent} prod rate: {factoryDetail.ProductionRate} distance: {minDistance}");
+                }
             }
         }
 
