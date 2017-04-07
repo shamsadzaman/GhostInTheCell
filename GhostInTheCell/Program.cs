@@ -36,7 +36,7 @@ internal class Player
 
     public int[][] FactoryDistance;
     public List<FactoryDetail> FactoryDetailList;
-    public List<Troop> TroopListOnRoute;                // Troops that are travelling
+    public List<Troop> EnRouteTroopList;                // Troops that are travelling
     public List<Bomb> BombListOnRoute;
     public List<BombedFactory> BombedFactoryList;
 
@@ -120,7 +120,7 @@ internal class Player
             DebugMessage("entity count: " + entityCount);
 
             player.FactoryDetailList = new List<FactoryDetail>();
-            player.TroopListOnRoute = new List<Troop>();
+            player.EnRouteTroopList = new List<Troop>();
             player.BombListOnRoute = new List<Bomb>();
             player.TroopListToSend = new List<Troop>();
 
@@ -147,7 +147,7 @@ internal class Player
                 }
                 else if (entityType == "TROOP")
                 {
-                    player.TroopListOnRoute.Add(new Troop
+                    player.EnRouteTroopList.Add(new Troop
                     {
                         EntityId = entityId,
                         Attacker = arg1,
@@ -228,7 +228,7 @@ internal class Player
     private bool IsFactoryUnderAttack(int factoryEntityId, int ownaterId = Owner.Me)
     {
         var attackerId = ownaterId == Owner.Me ? Owner.Enemy : Owner.Me;
-        return TroopListToSend.Any(x => x.TargetFactory == factoryEntityId && x.Attacker == attackerId);
+        return EnRouteTroopList.Any(x => x.TargetFactory == factoryEntityId && x.Attacker == attackerId);
     }
 
     /// <summary>
@@ -246,7 +246,7 @@ internal class Player
 
         var targetFactory = FactoryDetailList.Single(x => x.EntityId == factoryEntityId);
 
-        var troop = TroopListOnRoute.First(x => x.TargetFactory == factoryEntityId);
+        var troop = EnRouteTroopList.First(x => x.TargetFactory == factoryEntityId);
 
         DebugMessage($"******Under attack" +
                      $"\nProd Rate: {targetFactory.ProductionRate}" +
@@ -439,7 +439,7 @@ internal class Player
         //var isUnderAttack = TroopListToSend.Any(x => x.Attacker == -1);
 
         //TroopListToSend.Remove(TroopListToSend.Single(x => x.EntityId == ));
-        foreach (var enemyTroop in TroopListOnRoute.Where(x => x.Attacker == -1))
+        foreach (var enemyTroop in EnRouteTroopList.Where(x => x.Attacker == -1))
         {
             //var targetFactoryProductionRate = FactoryDetailList.Single(y => y.EntityId == troop.TargetFactory).ProductionRate;
 
