@@ -256,7 +256,7 @@ internal class Player
 
         // by the time troop reaches the factory check if the factory would have produced enough cyborg to defeat the troop
         return troop.NumberOfCyborg <=
-               targetFactory.ProductionRate * troop.RemainingTurnToTarget + targetFactory.NumberOfCyborgPresent + 10;
+               targetFactory.ProductionRate * troop.RemainingTurnToTarget + targetFactory.NumberOfCyborgPresent - 10;
     }
 
 
