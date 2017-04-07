@@ -522,7 +522,7 @@ internal class Player
             {
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
 
-                if (!IsFactorySafeAfterAttack(myFactory.EntityId))
+                if (IsFactoryUnderAttack(myFactory.EntityId))
                 {
                     DebugMessage($"Factory under attack, don't send troop. factory id: {myFactory.EntityId}");
                 }
