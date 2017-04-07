@@ -186,6 +186,7 @@ internal class Player
     /// </summary>
     public void SendCommand()
     {
+        //todo:: need to update this.right now if NO SEND TROOP then NO SEND BOMB, NO INCREASE PROD which might be bad
         // Any valid action, such as "WAIT" or "MOVE source destination cyborgs"
         if (TroopListToSend == null || !TroopListToSend.Any())
         {
@@ -211,9 +212,6 @@ internal class Player
 
     private void IncreaseProduction(StringBuilder sb)
     {
-        //var factory = FactoryDetailList.Where(x => x.Owner == 1)
-        //    .FirstOrDefault(x => x.NumberOfCyborgPresent > TotalArmySize / (FactoryDetailList.Count / 2));      // instead of one third army consider the number of factory present in the game to count the threshold to level up production
-
         var factory = FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 15);
 
         if (factory == null)
@@ -436,15 +434,8 @@ internal class Player
 
     private void DefendFactory()
     {
-        //var isUnderAttack = TroopListToSend.Any(x => x.Attacker == -1);
-
-        //TroopListToSend.Remove(TroopListToSend.Single(x => x.EntityId == ));
         foreach (var enemyTroop in EnRouteTroopList.Where(x => x.Attacker == -1))
         {
-            //var targetFactoryProductionRate = FactoryDetailList.Single(y => y.EntityId == troop.TargetFactory).ProductionRate;
-
-            //var tr = TroopListToSend.FirstOrDefault(x => x.EntityId == troop.TargetFactory 
-            //            && x.NumberOfCyborg + targetFactoryProductionRate * troop.RemainingTurnToTarget < troop.NumberOfCyborg);
             if (IsFactoryUnderAttack(enemyTroop.TargetFactory))
             {
                 continue;
@@ -501,12 +492,9 @@ internal class Player
     {
         DebugMessage("Target: " + targetFactory.EntityId);
 
-        // FactoryDistance[targetFactory.EntityId] gives me distance from all the other factories
         var distancesFromTargetFactory = FactoryDistance[targetFactory.EntityId];
 
         var myFactories = FactoryDetailList.Where(x => x.Owner == 1).ToList();
-
-        //DebugMessage("Number of my factories: " + myFactories.Count());
 
         if (!myFactories.Any())
             return null;
