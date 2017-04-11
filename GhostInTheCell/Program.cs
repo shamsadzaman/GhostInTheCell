@@ -348,7 +348,7 @@ internal class Player
     {
         var myFactoriesWithArmiesOverThreshold = FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold);
 
-        if (myFactoriesWithArmiesOverThreshold != null && myFactoriesWithArmiesOverThreshold.Any())
+        if (myFactoriesWithArmiesOverThreshold.Any())
         {
             DebugMessage("factory over thresh count: " + myFactoriesWithArmiesOverThreshold.Count());
 
