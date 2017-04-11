@@ -76,14 +76,12 @@ internal class Player
         var linkCount = int.Parse(Console.ReadLine()); // the number of links between factories
 
         var factoryDistances = new int[linkCount][];
-        int factory1 = 0;
-        int factory2 = 0;
 
         for (var i = 0; i < linkCount; i++)
         {
             inputs = Console.ReadLine().Split(' ');
-            factory1 = int.Parse(inputs[0]);
-            factory2 = int.Parse(inputs[1]);
+            var factory1 = int.Parse(inputs[0]);
+            var factory2 = int.Parse(inputs[1]);
             var distance = int.Parse(inputs[2]);
 
             if (factoryDistances[factory1] == null)
@@ -584,11 +582,11 @@ internal class Player
 
         var myFactories = FactoryDetailList.Where(x => x.Owner == 1);
 
-        if (myFactories == null || !myFactories.Any())
+        if (!myFactories.Any())
             return null;
 
         var minDistance = 30;
-        FactoryDetail factoryDetail = null;
+        FactoryDetail closestFactory = null;
 
         //todo - improvement: I might be able to get rid of the loop if I add the destination array to each object for each factory
         // gets the closest factory
@@ -596,10 +594,10 @@ internal class Player
             if (distancesFromTargetFactory[myFactory.EntityId] < minDistance)
             {
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
-                factoryDetail = myFactory;
+                closestFactory = myFactory;
             }
 
-        return factoryDetail;
+        return closestFactory;
     }
 
     #region classes
