@@ -469,7 +469,7 @@ internal class Player
 
         var neutralfactoriesOrderedByAttackValue = neutralFactories.OrderByDescending(x => x.AttackValue);
 
-        foreach(var nFactory in neutralFactories)
+        foreach(var nFactory in neutralfactoriesOrderedByAttackValue)
         {
             if(nFactory.NumberOfCyborgPresent < sourceFactory.NumberOfCyborgPresent + 2)
             {
