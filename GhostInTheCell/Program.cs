@@ -526,21 +526,19 @@ internal class Player
     {
         var closestFactoryWithBiggerArmy = FindClosestFactoryWithBiggerArmy(targetFactory);
 
-        if (closestFactoryWithBiggerArmy != null)
+        if (closestFactoryWithBiggerArmy == null)
+            return null;
+
+        var troopToSend = new Troop
         {
-            var troopToSend = new Troop
-            {
-                SourceFactory = closestFactoryWithBiggerArmy.EntityId,
-                TargetFactory = targetFactory.EntityId,
-                NumberOfCyborg = targetFactory.NumberOfCyborgPresent + 2
-            };
+            SourceFactory = closestFactoryWithBiggerArmy.EntityId,
+            TargetFactory = targetFactory.EntityId,
+            NumberOfCyborg = targetFactory.NumberOfCyborgPresent + 2
+        };
 
-            UpdateCyborgNumberInFactory(troopToSend);
+        UpdateCyborgNumberInFactory(troopToSend);
 
-            return troopToSend;
-        }
-
-        return null;
+        return troopToSend;
     }
 
     private void UpdateCyborgNumberInFactory(Troop troopToSend)
