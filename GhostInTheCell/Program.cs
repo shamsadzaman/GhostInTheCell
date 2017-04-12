@@ -185,27 +185,29 @@ internal class Player
     /// </summary>
     public void SendCommand()
     {
-        //todo:: need to update this.right now if NO SEND TROOP then NO SEND BOMB, NO INCREASE PROD which might be bad
-        // Any valid action, such as "WAIT" or "MOVE source destination cyborgs"
-        if (TroopListToSend == null || !TroopListToSend.Any())
+        var sb = new StringBuilder();
+
+        if (TroopListToSend != null && TroopListToSend.Any())
         {
-            Console.WriteLine("WAIT");
+            foreach (var troopToSend in TroopListToSend)
+            {
+                sb.AppendFormat("MOVE {0} {1} {2};", troopToSend.SourceFactory, troopToSend.TargetFactory,
+                    troopToSend.NumberOfCyborg);
+            }
+        }
+
+        SendBomb(sb);
+
+        IncreaseProduction(sb);
+
+        if (sb.Length > 0)
+        {
+            sb.Length -= 1;
+            Console.WriteLine(sb.ToString());
         }
         else
         {
-            var sb = new StringBuilder();
-
-            foreach (var troopToSend in TroopListToSend)
-            {
-                sb.AppendFormat("MOVE {0} {1} {2};", troopToSend.SourceFactory, troopToSend.TargetFactory, troopToSend.NumberOfCyborg);
-            }
-
-            SendBomb(sb);
-
-            IncreaseProduction(sb);
-
-            sb.Length -= 1;
-            Console.WriteLine(sb.ToString());
+            Console.WriteLine("WAIT");
         }
     }
 
@@ -344,7 +346,8 @@ internal class Player
 
     public void Strategize()
     {
-        var myFactoriesWithArmiesOverThreshold = FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold);
+        var myFactoriesWithArmiesOverThreshold =
+            FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold).ToList();
 
         if (myFactoriesWithArmiesOverThreshold.Any())
         {
@@ -446,7 +449,7 @@ internal class Player
             if (!IsFactorySafeAfterAttack(attackedFactory.EntityId) && FactoryDetailList.Count(x => x.Owner == Owner.Me) > 1 && attackedFactory.ProductionRate > 0)
             {
                 // send troop from another factory
-                var sourceFactory = FindClosestFactoryWithBiggerArmy(attackedFactory);
+                var sourceFactory = FindClosestFactory(attackedFactory);
 
                 // find a source factory; if that's under attak find the next best one. 
                 // then calculate how many troop needs to be sent to defend that factory
@@ -592,7 +595,7 @@ internal class Player
     {
         var distancesFromTargetFactory = FactoryDistance[targetFactory.EntityId];
 
-        var myFactories = FactoryDetailList.Where(x => x.Owner == 1);
+        var myFactories = FactoryDetailList.Where(x => x.Owner == Owner.Me).ToList();
 
         if (!myFactories.Any())
             return null;
