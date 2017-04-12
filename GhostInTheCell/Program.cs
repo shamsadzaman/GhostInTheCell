@@ -439,11 +439,17 @@ internal class Player
 
     private void DefendFactory()
     {
-        foreach (var enemyTroop in EnRouteTroopList.Where(x => x.Attacker == -1))
+        foreach (var enemyTroop in EnRouteTroopList.Where(x => x.Attacker == Owner.Enemy))
         {
-            if (IsFactoryUnderAttack(enemyTroop.TargetFactory))
+            var attackedFactory = FactoryDetailList.Single(x => x.EntityId == enemyTroop.TargetFactory);
+
+            if (!IsFactorySafeAfterAttack(attackedFactory.EntityId) && FactoryDetailList.Count(x => x.Owner == Owner.Me) > 1 && attackedFactory.ProductionRate > 0)
             {
-                continue;
+                // send troop from another factory
+                var sourceFactory = FindClosestFactoryWithBiggerArmy(attackedFactory);
+
+                // find a source factory; if that's under attak find the next best one. 
+                // then calculate how many troop needs to be sent to defend that factory
             }
 
             var tr = TroopListToSend.FirstOrDefault(myTroop => myTroop.SourceFactory == enemyTroop.TargetFactory);
@@ -462,7 +468,10 @@ internal class Player
 
         foreach (var nFactory in neutralFactories)
         {
-            nFactory.AttackValue = (nFactory.ProductionRate / 3) + (1 - (sourceFactory.DistanceToOtherFactories[nFactory.EntityId] / 20));
+            nFactory.AttackValue = (decimal) nFactory.ProductionRate / MaximumProduction +
+                                   (1 -
+                                    (decimal) sourceFactory.DistanceToOtherFactories[nFactory.EntityId] /
+                                    MaximumDistance);
         }
 
         var neutralfactoriesOrderedByAttackValue = neutralFactories.OrderByDescending(x => x.AttackValue);
@@ -471,6 +480,8 @@ internal class Player
         {
             if(nFactory.NumberOfCyborgPresent < sourceFactory.NumberOfCyborgPresent + 2)
             {
+                DebugMessage(
+                    $"Sending troop to {nFactory.EntityId} prodrate: {nFactory.ProductionRate} distance: {FactoryDistance[sourceFactory.EntityId][nFactory.EntityId]} attack value: {nFactory.AttackValue}");
                 AddTroopToSendList(sourceFactory, nFactory);
             }
         }
@@ -552,18 +563,19 @@ internal class Player
         // gets the closest factory
         foreach (var myFactory in myFactories)
         {
-            if (distancesFromTargetFactory[myFactory.EntityId] < minDistance && targetFactory.NumberOfCyborgPresent < myFactory.NumberOfCyborgPresent)
+            if (distancesFromTargetFactory[myFactory.EntityId] < minDistance &&
+                targetFactory.NumberOfCyborgPresent < myFactory.NumberOfCyborgPresent)
             {
-                minDistance = distancesFromTargetFactory[myFactory.EntityId];
-
                 if (IsFactoryUnderAttack(myFactory.EntityId))
                 {
                     DebugMessage($"Factory under attack, don't send troop. factory id: {myFactory.EntityId}");
                 }
                 else
                 {
-                    factoryDetail = myFactory; 
-                    DebugMessage($"Source Factory found: {factoryDetail.EntityId}  army: {factoryDetail.NumberOfCyborgPresent} prod rate: {factoryDetail.ProductionRate} distance: {minDistance}");
+                    minDistance = distancesFromTargetFactory[myFactory.EntityId];
+                    factoryDetail = myFactory;
+                    DebugMessage(
+                        $"Source Factory found: {factoryDetail.EntityId}  army: {factoryDetail.NumberOfCyborgPresent} prod rate: {factoryDetail.ProductionRate} distance: {minDistance}");
                 }
             }
         }
@@ -591,7 +603,7 @@ internal class Player
         //todo - improvement: I might be able to get rid of the loop if I add the destination array to each object for each factory
         // gets the closest factory
         foreach (var myFactory in myFactories)
-            if (distancesFromTargetFactory[myFactory.EntityId] < minDistance)
+            if (distancesFromTargetFactory[myFactory.EntityId] < minDistance && targetFactory.EntityId != myFactory.EntityId)
             {
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
                 closestFactory = myFactory;
