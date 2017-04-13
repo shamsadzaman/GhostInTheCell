@@ -32,7 +32,10 @@ internal class Player
     private const int MaximumDistance = 20;
     private const int MaximumProduction = 3;
 
-    private const decimal ArmyThresholdFraction = 0.333M;
+    private decimal ArmyThresholdFraction
+    {
+        get { return 0.25M; }
+    }
 
     public int[][] FactoryDistance;
     public List<FactoryDetail> FactoryDetailList;
@@ -58,7 +61,7 @@ internal class Player
 
     public int TotalArmySize => MyArmySize + EnemyArmySize;
 
-    public decimal ArmyThreshold => TotalArmySize * ((decimal) EnemyArmySize / MyArmySize);
+    public decimal ArmyThreshold => TotalArmySize * ArmyThresholdFraction;
 
     public List<Troop> TroopListToSend { get; private set; }
     public int NumberOfBombAvailable { get; private set; }
@@ -350,7 +353,7 @@ internal class Player
     public void Strategize()
     {
         var myFactoriesWithArmiesOverThreshold =
-            FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 20).ToList();
+            FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold).ToList();
 
         DebugMessage($"army threshold: {ArmyThreshold}");
 
