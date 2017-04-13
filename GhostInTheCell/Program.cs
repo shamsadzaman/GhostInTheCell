@@ -58,7 +58,7 @@ internal class Player
 
     public int TotalArmySize => MyArmySize + EnemyArmySize;
 
-    public decimal ArmyThreshold => TotalArmySize * ArmyThresholdFraction;
+    public decimal ArmyThreshold => TotalArmySize * ((decimal) EnemyArmySize / MyArmySize);
 
     public List<Troop> TroopListToSend { get; private set; }
     public int NumberOfBombAvailable { get; private set; }
