@@ -373,17 +373,17 @@ internal class Player
             }
         }
 
-        //var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0).Where(x => x.ProductionRate > 0)
-        //    .OrderByDescending(x => x.ProductionRate);
+        var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0).Where(x => x.ProductionRate > 0)
+            .OrderByDescending(x => x.ProductionRate);
 
-        //var enemyFactories = FactoryDetailList.Where(x => x.Owner == -1);
+        var enemyFactories = FactoryDetailList.Where(x => x.Owner == -1);
 
-        //// attack neutral
-        //if (productiveNeutralFactories.Any())
-        //    BuildTroopList(productiveNeutralFactories);
-        //// attack enemy
-        //else
-        //    BuildTroopList(enemyFactories.OrderByDescending(x => x.ProductionRate));
+        // attack neutral
+        if (productiveNeutralFactories.Any())
+            BuildTroopList(productiveNeutralFactories);
+        // attack enemy
+        else
+            BuildTroopList(enemyFactories.OrderByDescending(x => x.ProductionRate));
 
         SendTroopToNonProdFactory();
 
