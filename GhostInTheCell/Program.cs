@@ -350,7 +350,7 @@ internal class Player
     public void Strategize()
     {
         var myFactoriesWithArmiesOverThreshold =
-            FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold).ToList();
+            FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 20).ToList();
 
         DebugMessage($"army threshold: {ArmyThreshold}");
 
