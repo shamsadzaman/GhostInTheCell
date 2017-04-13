@@ -216,7 +216,9 @@ internal class Player
 
     private void IncreaseProduction(StringBuilder sb)
     {
-        var factoryList = FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 15 && x.ProductionRate < 3).ToList();
+        var factoryList =
+            FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 10 && x.ProductionRate < 3)
+                .ToList();
 
         if (!factoryList.Any())
             return;
