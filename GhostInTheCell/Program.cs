@@ -32,7 +32,7 @@ internal class Player
     private const int MaximumDistance = 20;
     private const int MaximumProduction = 3;
 
-    private decimal ArmyThresholdFraction
+    private static decimal ArmyThresholdFraction
     {
         get { return 0.25M; }
     }
@@ -176,20 +176,20 @@ internal class Player
             }
 
             //player.Initialize();
+            var sb = new StringBuilder();
 
-            player.Strategize(); // creates the troop list to send
+            player.Strategize(sb); // creates the troop list to send
 
-            player.SendCommand();
+            player.SendCommand(sb);
         }
     }
 
     /// <summary>
     /// creates the string command
     /// </summary>
-    public void SendCommand()
+    /// <param name="sb"></param>
+    public void SendCommand(StringBuilder sb)
     {
-        var sb = new StringBuilder();
-
         if (TroopListToSend != null && TroopListToSend.Any())
         {
             foreach (var troopToSend in TroopListToSend)
@@ -198,10 +198,6 @@ internal class Player
                     troopToSend.NumberOfCyborg);
             }
         }
-
-        SendBomb(sb);
-
-        IncreaseProduction(sb);
 
         if (sb.Length > 0)
         {
@@ -229,6 +225,7 @@ internal class Player
                 (decimal) GetEnemyTroopSize(factory) / factory.NumberOfCyborgPresent < 0.1m)
             {
                 sb.AppendFormat("INC {0};", factory.EntityId);
+                UpdateCyborgNumberInFactory(new Troop {SourceFactory = factory.EntityId, NumberOfCyborg = 10});      // creating dummy troop to decrease army size
             }
         }
     }
@@ -300,30 +297,8 @@ internal class Player
                         + "\nTarget Factory: " + enemyMostProductiveFactory.EntityId
                         + "\nSource Factory: " + closestFactory.EntityId);
 
-            //var isBombOnTheWay = BombedFactoryList.Any(x => x.EntityId == enemyMostProductiveFactory.EntityId && NumberOfTurn < x.NumberOfTurnFactoryWasBombed);
-            //var shouldTakeFiveTurnsToReachTarget = distance >= 5;
-
-            //var shouldSendBomb = !isBombOnTheWay && shouldTakeFiveTurnsToReachTarget;
-
-            var bombedFactory = BombedFactoryList.FirstOrDefault(x => x.EntityId == enemyMostProductiveFactory.EntityId); // && NumberOfTurn < x.NumberOfTurnFactoryWasBombed);
+            var bombedFactory = BombedFactoryList.FirstOrDefault(x => x.EntityId == enemyMostProductiveFactory.EntityId);
             var shouldSendBomb = false;
-
-            //if(bombedFactory != null && bombedFactory.NumberOfTurnBombWillExplode > NumberOfTurn)
-            //{
-            //    // bomb already on it's way
-            //    //DebugMessage("********* bomb's on the way");
-            //}
-            // this check bumps my rank from 288 to 205; WHY????
-            //else if (bombedFactory != null && NumberOfTurn + distance - bombedFactory.NumberOfTurnFactoryWasBombed >= 5)
-            //{
-            //    // bombed in past, send bomb if when bomb reaches production will start again
-            //    shouldSendBomb = true;
-            //}
-            //else
-            //{
-            //    // bomb hasn't been sent
-            //    shouldSendBomb = true;
-            //}
 
             if (bombedFactory == null)
             {
@@ -361,8 +336,12 @@ internal class Player
         TroopListToSend = new List<Troop>();
     }
 
-    public void Strategize()
+    public void Strategize(StringBuilder sb)
     {
+        IncreaseProduction(sb);
+
+        SendBomb(sb);
+
         var myFactoriesWithArmiesOverThreshold =
             FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold).ToList();
 
@@ -496,9 +475,9 @@ internal class Player
         }
     }
 
-    private void BuildTroopToSendAround(FactoryDetail sourceFactory, int ownerId)
+    private void BuildTroopToSendAround(FactoryDetail sourceFactory, int targetOwnerId)
     {
-        var targetFactories = FactoryDetailList.Where(x => x.Owner == ownerId);
+        var targetFactories = FactoryDetailList.Where(x => x.Owner == targetOwnerId);
 
         foreach (var nFactory in targetFactories)
         {
@@ -512,10 +491,10 @@ internal class Player
 
         foreach(var nFactory in targetFactoriesOrderedByAttackValue)
         {
-            if(nFactory.NumberOfCyborgPresent < sourceFactory.NumberOfCyborgPresent + 2)
+            if(nFactory.NumberOfCyborgPresent < sourceFactory.NumberOfCyborgPresent - 2)
             {
                 DebugMessage(
-                    $"Sending troop to {nFactory.EntityId} from {sourceFactory.EntityId} targetProdrate: {nFactory.ProductionRate} " +
+                    $"Sending troop to {nFactory.EntityId} from {sourceFactory.EntityId} source army: {sourceFactory.NumberOfCyborgPresent} targetProdrate: {nFactory.ProductionRate} " +
                     $"distance: {FactoryDistance[sourceFactory.EntityId][nFactory.EntityId]} attack value: {nFactory.AttackValue}");
                 AddTroopToSendList(sourceFactory, nFactory);
             }
@@ -536,8 +515,10 @@ internal class Player
             NumberOfCyborg = targetFactory.NumberOfCyborgPresent + 2
         };
 
-        targetFactory.NumberOfCyborgPresent -= troopToSend.NumberOfCyborg;
+        sourceFactory.NumberOfCyborgPresent -= troopToSend.NumberOfCyborg;
 
+        DebugMessage($"source factory size: {sourceFactory.NumberOfCyborgPresent}");
+        DebugMessage($"from factory list size: {FactoryDetailList.Single(x => x.EntityId == sourceFactory.EntityId).NumberOfCyborgPresent}");
         //UpdateCyborgNumberInFactory(troopToSend);
 
         return troopToSend;
@@ -575,7 +556,9 @@ internal class Player
 
     private void UpdateCyborgNumberInFactory(Troop troopToSend)
     {
+        DebugMessage($"updating factory: {troopToSend.SourceFactory} old army size: {FactoryDetailList.Single(x => x.EntityId == troopToSend.SourceFactory).NumberOfCyborgPresent}");
         FactoryDetailList.Single(x => x.EntityId == troopToSend.SourceFactory).NumberOfCyborgPresent -= troopToSend.NumberOfCyborg;
+        DebugMessage($"updating factory: {troopToSend.SourceFactory} new army size: {FactoryDetailList.Single(x => x.EntityId == troopToSend.SourceFactory).NumberOfCyborgPresent}");
     }
 
     public FactoryDetail FindClosestFactoryWithBiggerArmy(FactoryDetail targetFactory)
@@ -597,7 +580,7 @@ internal class Player
         foreach (var myFactory in myFactories)
         {
             if (distancesFromTargetFactory[myFactory.EntityId] < minDistance &&
-                targetFactory.NumberOfCyborgPresent < myFactory.NumberOfCyborgPresent)
+                targetFactory.NumberOfCyborgPresent < myFactory.NumberOfCyborgPresent - 2)
             {
                 if (IsFactoryUnderAttack(myFactory.EntityId))
                 {
