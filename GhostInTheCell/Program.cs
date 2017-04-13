@@ -118,7 +118,7 @@ internal class Player
             player.NumberOfTurn++;
 
             var entityCount = int.Parse(Console.ReadLine()); // the number of entities (e.g. factories and troops)
-            DebugMessage("entity count: " + entityCount);
+            //DebugMessage("entity count: " + entityCount);
 
             player.FactoryDetailList = new List<FactoryDetail>();
             player.EnRouteTroopList = new List<Troop>();
@@ -225,11 +225,20 @@ internal class Player
 
         foreach(var factory in factoryList)
         {
-            if (!IsFactoryUnderAttack(factory.EntityId))
+            if (!IsFactoryUnderAttack(factory.EntityId) ||
+                (decimal) GetEnemyTroopSize(factory) / factory.NumberOfCyborgPresent < 0.1m)
             {
                 sb.AppendFormat("INC {0};", factory.EntityId);
             }
         }
+    }
+
+    private int GetEnemyTroopSize(FactoryDetail attackedFactory)
+    {
+        var sum = EnRouteTroopList.Where(x => x.EntityId == attackedFactory.EntityId).Sum(x => x.NumberOfCyborg);
+        DebugMessage($"attacked factory: {attackedFactory.EntityId} enemyTroop: {sum} factoryTroop: {attackedFactory.NumberOfCyborgPresent}");
+
+        return sum;
     }
 
     private bool IsFactoryUnderAttack(int factoryEntityId, int ownaterId = Owner.Me)
@@ -506,7 +515,8 @@ internal class Player
             if(nFactory.NumberOfCyborgPresent < sourceFactory.NumberOfCyborgPresent + 2)
             {
                 DebugMessage(
-                    $"Sending troop to {nFactory.EntityId} prodrate: {nFactory.ProductionRate} distance: {FactoryDistance[sourceFactory.EntityId][nFactory.EntityId]} attack value: {nFactory.AttackValue}");
+                    $"Sending troop to {nFactory.EntityId} from {sourceFactory.EntityId} targetProdrate: {nFactory.ProductionRate} " +
+                    $"distance: {FactoryDistance[sourceFactory.EntityId][nFactory.EntityId]} attack value: {nFactory.AttackValue}");
                 AddTroopToSendList(sourceFactory, nFactory);
             }
         }
