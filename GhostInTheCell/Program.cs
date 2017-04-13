@@ -349,6 +349,8 @@ internal class Player
         var myFactoriesWithArmiesOverThreshold =
             FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > ArmyThreshold).ToList();
 
+        DebugMessage($"army threshold: {ArmyThreshold}");
+
         if (myFactoriesWithArmiesOverThreshold.Any())
         {
             DebugMessage("factory over thresh count: " + myFactoriesWithArmiesOverThreshold.Count());
@@ -356,21 +358,26 @@ internal class Player
             // todo: select target factory around each of my factory
             foreach(var myFactory in myFactoriesWithArmiesOverThreshold)
             {
-                BuildTroopToSendAround(myFactory);
+                BuildTroopToSendAround(myFactory, Owner.Neutral);
+            }
+
+            foreach (var myFactory in myFactoriesWithArmiesOverThreshold)
+            {
+                BuildTroopToSendAround(myFactory, Owner.Enemy);
             }
         }
 
-        var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0).Where(x => x.ProductionRate > 0)
-            .OrderByDescending(x => x.ProductionRate);
+        //var productiveNeutralFactories = FactoryDetailList.Where(x => x.Owner == 0).Where(x => x.ProductionRate > 0)
+        //    .OrderByDescending(x => x.ProductionRate);
 
-        var enemyFactories = FactoryDetailList.Where(x => x.Owner == -1);
+        //var enemyFactories = FactoryDetailList.Where(x => x.Owner == -1);
 
-        // attack neutral
-        if (productiveNeutralFactories.Any())
-            BuildTroopList(productiveNeutralFactories);
-        // attack enemy
-        else
-            BuildTroopList(enemyFactories.OrderByDescending(x => x.ProductionRate));
+        //// attack neutral
+        //if (productiveNeutralFactories.Any())
+        //    BuildTroopList(productiveNeutralFactories);
+        //// attack enemy
+        //else
+        //    BuildTroopList(enemyFactories.OrderByDescending(x => x.ProductionRate));
 
         SendTroopToNonProdFactory();
 
@@ -448,11 +455,18 @@ internal class Player
 
             if (!IsFactorySafeAfterAttack(attackedFactory.EntityId) && FactoryDetailList.Count(x => x.Owner == Owner.Me) > 1 && attackedFactory.ProductionRate > 0)
             {
+
+                var factoryToSkip = new List<int>();
+
                 // send troop from another factory
-                var sourceFactory = FindClosestFactory(attackedFactory);
+                var sourceFactory = FindClosestFactory(attackedFactory, true);
 
                 // find a source factory; if that's under attak find the next best one. 
                 // then calculate how many troop needs to be sent to defend that factory
+                if (IsFactoryUnderAttack(sourceFactory.EntityId))
+                {
+                    factoryToSkip.Add(sourceFactory.EntityId);
+                }
             }
 
             var tr = TroopListToSend.FirstOrDefault(myTroop => myTroop.SourceFactory == enemyTroop.TargetFactory);
@@ -465,11 +479,11 @@ internal class Player
         }
     }
 
-    private void BuildTroopToSendAround(FactoryDetail sourceFactory)
+    private void BuildTroopToSendAround(FactoryDetail sourceFactory, int ownerId)
     {
-        var neutralFactories = FactoryDetailList.Where(x => x.Owner == Owner.Neutral);
+        var targetFactories = FactoryDetailList.Where(x => x.Owner == ownerId);
 
-        foreach (var nFactory in neutralFactories)
+        foreach (var nFactory in targetFactories)
         {
             nFactory.AttackValue = (decimal) nFactory.ProductionRate / MaximumProduction +
                                    (1 -
@@ -477,9 +491,9 @@ internal class Player
                                     MaximumDistance);
         }
 
-        var neutralfactoriesOrderedByAttackValue = neutralFactories.OrderByDescending(x => x.AttackValue);
+        var targetFactoriesOrderedByAttackValue = targetFactories.OrderByDescending(x => x.AttackValue);
 
-        foreach(var nFactory in neutralfactoriesOrderedByAttackValue)
+        foreach(var nFactory in targetFactoriesOrderedByAttackValue)
         {
             if(nFactory.NumberOfCyborgPresent < sourceFactory.NumberOfCyborgPresent + 2)
             {
@@ -589,7 +603,7 @@ internal class Player
         Console.Error.WriteLine(message);
     }
 
-    private FactoryDetail FindClosestFactory(FactoryDetail targetFactory)
+    private FactoryDetail FindClosestFactory(FactoryDetail targetFactory, bool checkForAttack = false)
     {
         var distancesFromTargetFactory = FactoryDistance[targetFactory.EntityId];
 
@@ -606,6 +620,11 @@ internal class Player
         foreach (var myFactory in myFactories)
             if (distancesFromTargetFactory[myFactory.EntityId] < minDistance && targetFactory.EntityId != myFactory.EntityId)
             {
+                if (checkForAttack && IsFactoryUnderAttack(myFactory.EntityId))
+                {
+                    continue;
+                }
+
                 minDistance = distancesFromTargetFactory[myFactory.EntityId];
                 closestFactory = myFactory;
             }
