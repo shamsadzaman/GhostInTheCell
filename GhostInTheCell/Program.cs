@@ -213,14 +213,17 @@ internal class Player
 
     private void IncreaseProduction(StringBuilder sb)
     {
-        var factory = FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 15);
+        var factoryList = FactoryDetailList.Where(x => x.Owner == Owner.Me && x.NumberOfCyborgPresent > 15 && x.ProductionRate < 3).ToList();
 
-        if (factory == null)
+        if (!factoryList.Any())
             return;
 
-        if (!IsFactoryUnderAttack(factory.EntityId))
+        foreach(var factory in factoryList)
         {
-            sb.AppendFormat("INC {0};", factory.EntityId);
+            if (!IsFactoryUnderAttack(factory.EntityId))
+            {
+                sb.AppendFormat("INC {0};", factory.EntityId);
+            }
         }
     }
 
