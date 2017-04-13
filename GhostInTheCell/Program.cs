@@ -549,7 +549,7 @@ internal class Player
         if (closestFactoryWithBiggerArmy == null)
             return null;
 
-        var troopToSend = new Troop
+        var troopToSend = new Troop 
         {
             SourceFactory = closestFactoryWithBiggerArmy.EntityId,
             TargetFactory = targetFactory.EntityId,
