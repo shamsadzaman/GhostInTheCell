@@ -518,10 +518,10 @@ internal class Player
 
         foreach (var nFactory in targetFactories)
         {
-            nFactory.AttackValue = (decimal)nFactory.ProductionRate / MaximumProduction +
-                                   (1 -
-                                    (decimal)sourceFactory.DistanceToOtherFactories[nFactory.EntityId] /
-                                    MaximumDistance);      // if army is zero divide by 0.66m to add to attack value
+            var distanceFromSource = sourceFactory.DistanceToOtherFactories[nFactory.EntityId];
+
+            nFactory.AttackValue = (decimal) nFactory.ProductionRate / MaximumProduction +
+                                   (1 - (decimal) distanceFromSource / MaximumDistance); // if army is zero divide by 0.66m to add to attack value
         }
 
         var targetFactoriesOrderedByAttackValue = targetFactories.OrderByDescending(x => x.AttackValue).ToList();
