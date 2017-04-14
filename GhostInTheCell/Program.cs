@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 // todo: if factory has 1/3 of total army -> pick target -> prefer closer productive ones
 // todo: else pick a target -> pick sources
@@ -279,7 +280,7 @@ internal class Player
         if (NumberOfBombAvailable > 0)
         {
             var enemyMostProductiveFactory =
-                FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Enemy && x.ProductionRate == 3);
+                FactoryDetailList.FirstOrDefault(x => x.Owner == Owner.Enemy && x.ProductionRate == 3 && EnRouteTroopList.All(y => y.TargetFactory != x.EntityId));
                                                 //.OrderByDescending(x => x.ProductionRate).First();
 
             //if (enemyMostProductiveFactory.ProductionRate != 3 && FactoryDetailList.All(x => x.ProductionRate >= 2))
